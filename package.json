@@ -1,0 +1,23 @@
+{
+    "name": "angular-resource-sails",
+    "version": "0.0.1",
+    "private": false,
+    "description": "Angular $resource style service for accessing sails socket.io resources",
+    "main": "",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/jpro-mn/angular-resource-sails.git"
+    },
+    "keywords": [
+        "sails",
+        "angular",
+        "socket.io"
+    ],
+    "contributors": [
+        "Joshua Prodahl <jprodahl@gmail.com> (http://returnnull.com)",
+        "Jason More <jason.more@gmail.com> (http://jasonmore.net)"
+    ],
+    "dependencies": {
+        "sails": "~0.10.x"
+    }
+}
