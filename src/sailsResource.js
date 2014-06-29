@@ -3,10 +3,22 @@ angular.module("sailsResource", [])
 
         // TODO way to create items
 
-        return function(model) {
+        return function(options) {
 
-            var origin = "http://localhost:1337"; // TODO make this adjustable
-            var socket = $window.io.connect(origin);
+            // Setup
+            var model;
+            if(typeof options == "string") {
+                model = options;
+            }
+            else if(typeof options == "object" && options.model) {
+                model = options.model;
+            }
+            else {
+                console.log("model is required"); // TODO error out
+            }
+
+            var origin = options.origin || "http://localhost:1337";
+            var socket = options.socket || $window.io.connect(origin);
             var cache = {};
 
             // subscribe to changes

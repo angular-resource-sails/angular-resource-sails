@@ -1,0 +1,19 @@
+{
+    "name": "angular-resource-sails",
+    "version": "0.0.1",
+    "contributors": [
+        "Joshua Prodahl <jprodahl@gmail.com>",
+        "Jason More <Jason.More@gmail.com>"
+    ],
+    "private": true,
+    "ignore": [
+        "**/.*",
+        "bower_components",
+        "spec"
+    ],
+    "dependencies": {
+        "angular": "latest",
+        "angular-mocks": "latest",
+        "jasmine": "latest"
+    }
+}
