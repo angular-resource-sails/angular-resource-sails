@@ -67,14 +67,14 @@
                     $save: function () {
                         var self = this;
 
-                        if (!this.id) {
+                        if (!this.id) { // A new model, use POST
                             socket.post('/' + model, this, function(response) {
                                 $rootScope.$apply(function () {
                                     angular.copy(response, self);
                                 });
                             });
                         }
-                        else {
+                        else { // An existing model, use PUT
                             socket.put('/' + model + '/' + this.id, this, function (response) {
                                 $rootScope.$apply(function () {
                                     angular.copy(response, self);
