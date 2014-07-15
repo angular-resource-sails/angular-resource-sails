@@ -1,5 +1,5 @@
-angular.module("sailsResource", [])
-    .factory("sailsResource", function($rootScope, $window) {
+angular.module('sailsResource', [])
+    .factory('sailsResource', function($rootScope, $window) {
 
         // TODO way to create items
 
@@ -7,23 +7,23 @@ angular.module("sailsResource", [])
 
             // Setup
             var model;
-            if(typeof options == "string") {
+            if(typeof options == 'string') {
                 model = options;
             }
-            else if(typeof options == "object" && options.model) {
+            else if(typeof options == 'object' && options.model) {
                 model = options.model;
             }
             else {
-                console.log("model is required"); // TODO error out
+                console.log('model is required'); // TODO error out
             }
 
-            var origin = options.origin || "http://localhost:1337";
+            var origin = options.origin || 'http://localhost:1337';
             var socket = options.socket || $window.io.connect(origin);
             var cache = {};
 
             // subscribe to changes
             socket.on(model, function(message) {
-                if(message.verb == "updated") {
+                if(message.verb == 'updated') {
                     var cachedItem = cache[+message.id];
                     if(cachedItem) {
                         $rootScope.$apply(function() {
@@ -31,10 +31,10 @@ angular.module("sailsResource", [])
                         });
                     }
                 }
-                else if(message.verb == "created") {
+                else if(message.verb == 'created') {
                     cache[+message.id] = message.data;
                 }
-                else if(message.verb == "destroyed") {
+                else if(message.verb == 'destroyed') {
                     cache[+message.id] = null;
                 }
             });
@@ -51,7 +51,7 @@ angular.module("sailsResource", [])
                 // Update individual instance of model
                 $save: function() {
                     var self = this;
-                    socket.put("/" + model + "/" + this.id, this, function(response) {
+                    socket.put('/' + model + '/' + this.id, this, function(response) {
                         $rootScope.$apply(function() {
                             angular.copy(response, self);
                         });
@@ -61,7 +61,7 @@ angular.module("sailsResource", [])
                 // Delete individual instance of model
                 $delete: function() {
                     var self = this;
-                    socket.delete("/" + model + "/" + this.id, function() {
+                    socket.delete('/' + model + '/' + this.id, function() {
                         // TODO implement
                     });
                 }
@@ -72,7 +72,7 @@ angular.module("sailsResource", [])
                 // Retrieve list of models
                 query: function() {
                     var list = []; // empty list for now
-                    socket.get("/" + model, function(response) {
+                    socket.get('/' + model, function(response) {
                         $rootScope.$apply(function() {
                             angular.forEach(response, function(responseItem) {
                                 list.push(new Resource(responseItem.id, responseItem)); // update list
@@ -95,7 +95,7 @@ angular.module("sailsResource", [])
                     var item = new Resource(id); // empty item for now
                     cache[+id] = item;
 
-                    socket.get("/" + model + "/" + id, function(response) {
+                    socket.get('/' + model + '/' + id, function(response) {
                         $rootScope.$apply(function() {
                             angular.copy(response, item); // update item
                         });
