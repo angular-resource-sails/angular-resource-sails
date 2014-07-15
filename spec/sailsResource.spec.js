@@ -37,17 +37,18 @@ describe('sailsResource', function() {
 
         var item;
         beforeEach(function() {
-            item = service.get();
+            item = service.get(1);
         });
 
         it('should return an empty Resource immediately', function() {
             expect(item).toBeDefined();
-            expect(item.id).toBeUndefined();
+            expect(item.data).toBeUndefined();
         });
 
         it('should update to a populated Resource asynchronously', function(done) {
             setTimeout(function() {
                 expect(item.id).toBe(1);
+                expect(item.data).toBe('abc');
                 done();
             }, 750);
         });
@@ -55,7 +56,7 @@ describe('sailsResource', function() {
 
     describe('Resource', function() {
 
-        describe('posts', function() {
+        describe('create/post', function() {
 
             var item;
             beforeEach(function() {
@@ -75,14 +76,31 @@ describe('sailsResource', function() {
 
             var item;
             beforeEach(function() {
-                item = service.get();
+                item = service.get(1);
             }, 500);
 
             it('should change the value asynchronously', function(done) {
-                item.value = 'abc';
+                item.data = 'zzz';
                 item.$save();
                 setTimeout(function() {
                     expect(item.lastUpdate).toBeDefined();
+                    done();
+                }, 500);
+            });
+        });
+
+        describe('deletes', function() {
+
+            var item, originalCount;
+            beforeEach(function() {
+                item = service.get(1);
+                originalCount = socket.itemCount();
+            }, 500);
+
+            it('should clear the item', function(done) {
+                item.$delete();
+                setTimeout(function() {
+                    expect(item.id).toBeUndefined();
                     done();
                 }, 500);
             });

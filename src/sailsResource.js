@@ -47,7 +47,7 @@
 
                     // attempt to pull from cache
                     if (cache[+id]) {
-                        return cache[+id];
+                        // return cache[+id]; TODO should we use cache for this purpose? thinking no
                     }
 
                     var item = new Resource(id); // empty item for now
@@ -86,8 +86,10 @@
                     // Delete individual instance of model
                     $delete: function () {
                         var self = this;
-                        socket.delete('/' + model + '/' + this.id, function () {
-                            // TODO implement
+                        socket.delete('/' + model + '/' + this.id, function (response) {
+                            $rootScope.$apply(function() {
+                                angular.copy(response, self);
+                            });
                         });
                     }
                 };

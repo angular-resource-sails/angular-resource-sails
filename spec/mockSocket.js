@@ -1,7 +1,7 @@
 angular.module('sailsResource').factory('mockSocket', function() {
 
     var widgets = [
-        { id: 1 },{ id: 2 },{ id: 3 },{ id: 4 },{ id: 5 }
+        { id: 1, data: 'abc' },{ id: 2, data: 'def' },{ id: 3, data: 'hij' }
     ];
 
     return {
@@ -13,14 +13,15 @@ angular.module('sailsResource').factory('mockSocket', function() {
                     callback(widgets);
                 }
                 else { // get
-                    callback(widgets[0]);
+                    var id = /\/[^\/]+\/(\d+)/.exec(url)[1];
+                    callback(widgets[id-1]);
                 }
             }, 250);
         },
         post: function(url, data, callback) {
             setTimeout(function() {
                 var updated = angular.copy(data, {});
-                updated.id = 5;
+                updated.id = widgets.length;
                 updated.lastUpdate = new Date();
                 callback(updated);
             }, 250)
@@ -35,7 +36,13 @@ angular.module('sailsResource').factory('mockSocket', function() {
             }, 250)
         },
         delete: function(url, callback) {
-
+            setTimeout(function() {
+                var id = /\/[^\/]+\/(\d+)/.exec(url)[1];
+                var updated = widgets[id-1];
+                widgets.splice(id, 1);
+                updated = angular.copy({});
+                callback(updated);
+            }, 250)
         },
 
         // testing functions, not on a real socket
