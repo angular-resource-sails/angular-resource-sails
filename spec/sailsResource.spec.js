@@ -41,7 +41,7 @@ describe('sailsResource', function() {
             setTimeout(function() {
                 expect(items.length).toEqual(socket.itemCount());
                 done();
-            }, 750);
+            }, 200);
         });
     });
 
@@ -62,7 +62,7 @@ describe('sailsResource', function() {
                 expect(item.id).toEqual(1);
                 expect(item.data).toEqual('abc');
                 done();
-            }, 750);
+            }, 200);
         });
     });
 
@@ -74,7 +74,7 @@ describe('sailsResource', function() {
             beforeEach(function() {
                 item = new service();
                 originalCount = socket.itemCount();
-            }, 500);
+            }, 200);
 
             it('should create a new item asynchronously', function(done) {
                 item.$save();
@@ -85,7 +85,7 @@ describe('sailsResource', function() {
                     expect(item.id).toEqual(socket.itemCount());
                     expect(socket.itemCount()).toEqual(originalCount+1);
                     done();
-                }, 500);
+                }, 200);
             });
         });
 
@@ -94,7 +94,7 @@ describe('sailsResource', function() {
             var item;
             beforeEach(function() {
                 item = service.get(1);
-            }, 500);
+            }, 200);
 
             it('should change the item asynchronously', function(done) {
 
@@ -106,7 +106,7 @@ describe('sailsResource', function() {
                 setTimeout(function() {
                     expect(item.lastUpdate).toBeDefined();
                     done();
-                }, 500);
+                }, 200);
             });
         });
 
@@ -116,7 +116,7 @@ describe('sailsResource', function() {
             beforeEach(function() {
                 item = service.get(1);
                 originalCount = socket.itemCount();
-            }, 500);
+            }, 200);
 
             it('should clear the item asynchronously', function(done) {
                 item.$delete();
@@ -125,7 +125,7 @@ describe('sailsResource', function() {
                 setTimeout(function() {
                     expect(item.id).toBeUndefined();
                     done();
-                }, 500);
+                }, 200);
             });
         });
     });

@@ -6,7 +6,7 @@
 
             return function (options) {
 
-                if((typeof options == 'string' && options.length == 0) || options.model.length == 0) {
+                if((typeof options == 'string' && options.length == 0) || !options.model || options.model.length == 0) {
                     throw $resourceMinErr('badargs', 'Model name is required');
                 }
 
@@ -19,7 +19,7 @@
                     model = options.model;
                 }
 
-                var origin = options.origin || 'http://localhost:1337';
+                var origin = options.origin || $window.location.origin;
                 var socket = options.socket || $window.io.connect(origin);
                 var cache = {};
 
@@ -108,6 +108,10 @@
                         }
                     }
                     else if (message.verb == 'created') {
+                        // TODO do we store this in our cache?
+                        // If so, how do we get make use of it?
+                        // Scenario: we query a list, but then a new item is created, we are told about it
+                        // but there's currently no way to update that list
                         cache[+message.id] = message.data;
                     }
                     else if (message.verb == 'destroyed') {
