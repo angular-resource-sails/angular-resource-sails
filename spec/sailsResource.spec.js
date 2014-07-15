@@ -1,13 +1,14 @@
 describe('sailsResource', function() {
 
-    var service;
+    var service, socket;
 
     beforeEach(function() {
         module('sailsResource');
         inject(function(sailsResource, mockSocket) {
+            socket = mockSocket;
             service = sailsResource({
                 model: 'widget',
-                socket: mockSocket
+                socket: socket
             });
         });
     });
@@ -26,7 +27,7 @@ describe('sailsResource', function() {
 
         it('should update to a populated Resource array asynchronously', function(done) {
             setTimeout(function() {
-                expect(items.length).toBe(3);
+                expect(items.length).toBe(socket.itemCount());
                 done();
             }, 750);
         });
@@ -53,7 +54,24 @@ describe('sailsResource', function() {
     });
 
     describe('Resource', function() {
-        describe('saves', function() {
+
+        describe('posts', function() {
+
+            var item;
+            beforeEach(function() {
+                item = new service();
+            }, 500);
+
+            it('should save a new item', function(done) {
+                item.$save();
+                setTimeout(function() {
+                    expect(item.id).toEqual(socket.itemCount());
+                    done();
+                }, 500);
+            });
+        });
+
+        describe('updates', function() {
 
             var item;
             beforeEach(function() {
