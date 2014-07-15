@@ -21,6 +21,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
         post: function(url, data, callback) {
             setTimeout(function() {
                 var updated = angular.copy(data, {});
+                widgets.push(updated);
                 updated.id = widgets.length;
                 updated.lastUpdate = new Date();
                 callback(updated);
@@ -31,17 +32,14 @@ angular.module('sailsResource').factory('mockSocket', function() {
                 var updated = angular.copy(data, {});
                 updated.id = widgets.length;
                 updated.lastUpdate = new Date();
-                widgets.push(updated);
                 callback(updated);
             }, 250)
         },
         delete: function(url, callback) {
             setTimeout(function() {
                 var id = /\/[^\/]+\/(\d+)/.exec(url)[1];
-                var updated = widgets[id-1];
                 widgets.splice(id, 1);
-                updated = angular.copy({});
-                callback(updated);
+                callback({});
             }, 250)
         },
 

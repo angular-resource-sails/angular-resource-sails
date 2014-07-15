@@ -2,7 +2,13 @@
     angular.module('sailsResource', [])
         .factory('sailsResource', ['$rootScope', '$window', function ($rootScope, $window) {
 
+            var $resourceMinErr = angular.$$minErr('$resource');
+
             return function (options) {
+
+                if((typeof options == 'string' && options.length == 0) || options.model.length == 0) {
+                    throw $resourceMinErr('badargs', 'Model name is required');
+                }
 
                 // Options
                 var model;
@@ -11,9 +17,6 @@
                 }
                 else if (typeof options == 'object' && options.model) {
                     model = options.model;
-                }
-                else {
-                    console.log('model is required'); // TODO error out
                 }
 
                 var origin = options.origin || 'http://localhost:1337';
