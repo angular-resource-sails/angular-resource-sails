@@ -26,7 +26,12 @@
 
                 // Resource constructor
                 function Resource(id, item) {
-                    this.id = id; // required
+
+                    if(!id) {
+                        throw $resourceMinErr('badargs', 'Sails models require an id');
+                    }
+
+                    this.id = id;
                     this.$resolved = false;
                     if (item) {
                         angular.copy(item, this); // copy all properties if we're wrapping
