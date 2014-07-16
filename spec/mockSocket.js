@@ -3,6 +3,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
     var widgets = [
         { id: 1, data: 'abc' },{ id: 2, data: 'def' },{ id: 3, data: 'hij' }
     ];
+    var queue = [];
     var subscribers = {};
 
     return {
@@ -11,7 +12,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
             subscribers[model].push(callback);
         },
         get: function(url, callback) {
-            setTimeout(function() {
+            queue.push(function() {
                 if(url == '/widget') { // query
                     callback(widgets);
                 }
@@ -19,14 +20,14 @@ angular.module('sailsResource').factory('mockSocket', function() {
                     var id = /\/[^\/]+\/(\d+)/.exec(url)[1];
                     callback(widgets[id-1]);
                 }
-            }, 100);
+            });
         },
         post: function(url, data, callback) {
             var updated = angular.copy(data, {});
             updated.id = widgets.length+1;
             updated.lastUpdate = new Date();
 
-            setTimeout(function() {
+            queue.push(function() {
                 widgets.push(updated);
                 callback(updated);
 
@@ -35,13 +36,13 @@ angular.module('sailsResource').factory('mockSocket', function() {
                     sub(message);
                 });
 
-            }, 100)
+            });
         },
         put: function(url, data, callback) {
             var updated = angular.copy(data, {});
             updated.lastUpdate = new Date();
 
-            setTimeout(function() {
+            queue.push(function() {
                 widgets[updated.id-1] = updated;
                 callback(updated);
 
@@ -50,12 +51,12 @@ angular.module('sailsResource').factory('mockSocket', function() {
                     sub(message);
                 });
 
-            }, 100)
+            });
         },
         delete: function(url, callback) {
             var id = /\/[^\/]+\/(\d+)/.exec(url)[1];
 
-            setTimeout(function() {
+            queue.push(function() {
                 widgets.splice(id, 1);
                 callback({});
 
@@ -63,10 +64,18 @@ angular.module('sailsResource').factory('mockSocket', function() {
                 angular.forEach(subscribers['widget'], function(sub) {
                     sub(message);
                 });
-            }, 100)
+            });
         },
 
         // testing functions, not on a real socket
+        flush: function() {
+            while(queue.length) {
+                queue.pop()(); // pop and execute
+            }
+        },
+        queueCount: function() {
+            return queue.length;
+        },
         itemCount: function() {
             return widgets.length;
         }

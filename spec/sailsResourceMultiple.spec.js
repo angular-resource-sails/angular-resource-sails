@@ -18,17 +18,19 @@ describe('multiple sailsResources', function() {
         });
     });
 
+    afterEach(function() {
+        socket.flush();
+    });
+
     var item1, item2;
     beforeEach(function() {
         item1 = service1.get(1);
         item2 = service2.get(1);
+        socket.flush();
     });
 
-    it('should have the same initial data', function(done) {
-        setTimeout(function() {
-            expect(item1).toEqual(item2);
-            done();
-        }, 200);
+    it('should have the same initial data', function() {
+        expect(item1).toEqual(item2);
     });
 
     describe('update', function() {
@@ -37,11 +39,9 @@ describe('multiple sailsResources', function() {
             item1.$save();
         });
 
-        it('should send updates to all services', function(done) {
-            setTimeout(function() {
-                expect(item2).toEqual(item1);
-                done();
-            }, 200);
+        it('should send updates to all services', function() {
+            socket.flush();
+            expect(item2).toEqual(item1);
         });
     });
 

@@ -13,6 +13,10 @@ describe('sailsResource', function() {
         });
     });
 
+    afterEach(function() {
+        socket.flush();
+    });
+
     it('requires a model name', inject(function(sailsResource) {
         expect(function() {
             sailsResource();
@@ -37,11 +41,9 @@ describe('sailsResource', function() {
             expect(items.length).toEqual(0);
         });
 
-        it('should update to a populated Resource array asynchronously', function(done) {
-            setTimeout(function() {
-                expect(items.length).toEqual(socket.itemCount());
-                done();
-            }, 200);
+        it('should update to a populated Resource array asynchronously', function() {
+            socket.flush();
+            expect(items.length).toEqual(socket.itemCount());
         });
     });
 
@@ -57,12 +59,10 @@ describe('sailsResource', function() {
             expect(item.data).toBeUndefined();
         });
 
-        it('should update to a populated Resource asynchronously', function(done) {
-            setTimeout(function() {
-                expect(item.id).toEqual(1);
-                expect(item.data).toEqual('abc');
-                done();
-            }, 200);
+        it('should update to a populated Resource asynchronously', function() {
+            socket.flush();
+            expect(item.id).toEqual(1);
+            expect(item.data).toEqual('abc');
         });
     });
 
@@ -74,18 +74,17 @@ describe('sailsResource', function() {
             beforeEach(function() {
                 item = new service();
                 originalCount = socket.itemCount();
-            }, 200);
+                socket.flush();
+            });
 
-            it('should create a new item asynchronously', function(done) {
+            it('should create a new item asynchronously', function() {
                 item.$save();
                 expect(item.id).toBeUndefined();
                 expect(socket.itemCount()).toEqual(originalCount);
 
-                setTimeout(function() {
-                    expect(item.id).toEqual(socket.itemCount());
-                    expect(socket.itemCount()).toEqual(originalCount+1);
-                    done();
-                }, 200);
+                socket.flush();
+                expect(item.id).toEqual(socket.itemCount());
+                expect(socket.itemCount()).toEqual(originalCount+1);
             });
         });
 
@@ -94,19 +93,18 @@ describe('sailsResource', function() {
             var item;
             beforeEach(function() {
                 item = service.get(1);
-            }, 200);
+                socket.flush();
+            });
 
-            it('should change the item asynchronously', function(done) {
+            it('should change the item asynchronously', function() {
 
                 expect(item.lastUpdate).toBeUndefined();
 
                 item.data = 'zzz';
                 item.$save();
 
-                setTimeout(function() {
-                    expect(item.lastUpdate).toBeDefined();
-                    done();
-                }, 200);
+                socket.flush();
+                expect(item.lastUpdate).toBeDefined();
             });
         });
 
@@ -116,16 +114,16 @@ describe('sailsResource', function() {
             beforeEach(function() {
                 item = service.get(1);
                 originalCount = socket.itemCount();
-            }, 200);
+                socket.flush();
+            });
 
-            it('should clear the item asynchronously', function(done) {
+            it('should clear the item asynchronously', function() {
                 item.$delete();
                 expect(item.id).toBeDefined();
                 expect(socket.itemCount()).toEqual(originalCount);
-                setTimeout(function() {
-                    expect(item.id).toBeUndefined();
-                    done();
-                }, 200);
+
+                socket.flush();
+                expect(item.id).toBeUndefined();
             });
         });
     });
