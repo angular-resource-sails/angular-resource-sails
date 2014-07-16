@@ -68,7 +68,7 @@ describe('sailsResource', function() {
 
     describe('Resource', function() {
 
-        describe('create/post', function() {
+        describe('create', function() {
 
             var item, originalCount;
             beforeEach(function() {
@@ -117,7 +117,7 @@ describe('sailsResource', function() {
                 socket.flush();
             });
 
-            it('should clear the item asynchronously', function() {
+            it('should remove the item asynchronously', function() {
                 item.$delete();
                 expect(item.id).toBeDefined();
                 expect(socket.itemCount()).toEqual(originalCount);

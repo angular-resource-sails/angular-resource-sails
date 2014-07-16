@@ -21,24 +21,33 @@
 
                 var origin = options.origin || $window.location.origin;
                 var socket = options.socket || $window.io.connect(origin);
-                var cache = {};
+                var itemCache = {};
+                var listCache = {};
 
                 // Resource constructor
                 function Resource(id, item) {
                     this.id = id; // required
+                    this.$resolved = false;
                     if (item) {
                         angular.copy(item, this); // copy all properties if we're wrapping
                     }
                 }
 
                 // Retrieve list of models
-                Resource.query = function () {
-                    var list = []; // empty list for now
+                Resource.query = function (params) {
+
+                    var key = JSON.stringify(params || {});
+                    var list = listCache[key] || [];
+                    listCache[key] = list;
+
+                    // TODO doing a get here no matter what, does that make sense?
                     socket.get('/' + model, function (response) {
                         $rootScope.$apply(function () {
+                            while(list.length) list.pop();
                             angular.forEach(response, function (responseItem) {
-                                list.push(new Resource(responseItem.id, responseItem)); // update list
-                                cache[+responseItem.id] = responseItem;
+                                var item = new Resource(responseItem.id, responseItem);
+                                item.$resolved = true;
+                                list.push(item); // update list
                             });
                         });
                     });
@@ -48,17 +57,14 @@
                 // Retrieve individual instance of model
                 Resource.get = function (id) {
 
-                    // attempt to pull from cache
-                    if (cache[+id]) {
-                        // return cache[+id]; TODO should we use cache for this purpose? thinking no
-                    }
+                    var item = itemCache[+id] || new Resource(+id); // empty item for now
+                    itemCache[+id] = item;
 
-                    var item = new Resource(id); // empty item for now
-                    cache[+id] = item;
-
+                    // TODO doing a get here no matter what, does that make sense?
                     socket.get('/' + model + '/' + id, function (response) {
                         $rootScope.$apply(function () {
                             angular.copy(response, item); // update item
+                            item.$resolved = true;
                         });
                     });
                     return item;
@@ -100,22 +106,45 @@
                 // subscribe to changes
                 socket.on(model, function (message) {
                     if (message.verb == 'updated') {
-                        var cachedItem = cache[+message.id];
+                        var cachedItem = itemCache[+message.id];
                         if (cachedItem) {
                             $rootScope.$apply(function () {
                                 angular.copy(message.data, cachedItem);
                             });
                         }
+
+                        // update this item in all known lists
+                        angular.forEach(listCache, function(list) {
+                            angular.forEach(list, function(item) {
+                                if(+item.id == +message.id) {
+                                    $rootScope.$apply(function() {
+                                        angular.copy(message.data, item);
+                                    });
+                                }
+                            });
+                        });
                     }
                     else if (message.verb == 'created') {
-                        // TODO do we store this in our cache?
-                        // If so, how do we get make use of it?
-                        // Scenario: we query a list, but then a new item is created, we are told about it
-                        // but there's currently no way to update that list
-                        cache[+message.id] = message.data;
+                        itemCache[+message.id] = message.data;
+                        angular.forEach(listCache, function(list, key) {
+                            Resource.query(JSON.parse(key)); // retrieve queries again
+                        });
                     }
                     else if (message.verb == 'destroyed') {
-                        cache[+message.id] = null;
+                        delete itemCache[+message.id];
+
+                        // remove this item in all known lists
+                        angular.forEach(listCache, function(list) {
+                            var foundIndex = null;
+                            angular.forEach(list, function(item, index) {
+                                if(+item.id == +message.id) {
+                                    foundIndex = index;
+                                }
+                            });
+                            if(foundIndex) {
+                                list.splice(foundIndex, 1);
+                            }
+                        });
                     }
                 });
 

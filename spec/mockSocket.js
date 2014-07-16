@@ -14,11 +14,11 @@ angular.module('sailsResource').factory('mockSocket', function() {
         get: function(url, callback) {
             queue.push(function() {
                 if(url == '/widget') { // query
-                    callback(widgets);
+                    callback(angular.copy(widgets, []));
                 }
                 else { // get
                     var id = /\/[^\/]+\/(\d+)/.exec(url)[1];
-                    callback(widgets[id-1]);
+                    callback(angular.copy(widgets[id-1], {}));
                 }
             });
         },
