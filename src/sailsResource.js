@@ -26,11 +26,6 @@
 
                 // Resource constructor
                 function Resource(id, item) {
-
-                    if(!id) {
-                        throw $resourceMinErr('badargs', 'Sails models require an id');
-                    }
-
                     this.id = id;
                     this.$resolved = false;
                     if (item) {
