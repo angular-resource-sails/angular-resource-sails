@@ -6,7 +6,8 @@
 
             return function (options) {
 
-                if((typeof options == 'string' && options.length == 0) || !options.model || options.model.length == 0) {
+                if((typeof options == 'string' && options.length == 0) ||
+                    (typeof options != 'string' && !options.model && options.model.length == 0)) {
                     throw $resourceMinErr('badargs', 'Model name is required');
                 }
 

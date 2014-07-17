@@ -18,6 +18,7 @@ describe('sailsResource', function() {
     });
 
     it('requires a model name', inject(function(sailsResource) {
+        // invalid
         expect(function() {
             sailsResource();
         }).toThrow();
@@ -27,6 +28,14 @@ describe('sailsResource', function() {
         expect(function() {
             sailsResource({model: null});
         }).toThrow();
+
+        // valid inputs
+        expect(function() {
+            sailsResource('widget');
+        }).not.toThrow();
+        expect(function() {
+            sailsResource({model: 'widget'});
+        }).not.toThrow();
     }));
 
     describe('queries', function() {

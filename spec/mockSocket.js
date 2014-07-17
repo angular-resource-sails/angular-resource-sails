@@ -7,9 +7,9 @@ angular.module('sailsResource').factory('mockSocket', function() {
     var subscribers = {};
 
     return {
-        on: function(model, callback){
-            if(!subscribers[model]) subscribers[model] = [];
-            subscribers[model].push(callback);
+        on: function(message, callback){
+            if(!subscribers[message]) subscribers[message] = [];
+            subscribers[message].push(callback);
         },
         get: function(url, callback) {
             queue.push(function() {
@@ -35,7 +35,6 @@ angular.module('sailsResource').factory('mockSocket', function() {
                 angular.forEach(subscribers['widget'], function(sub) {
                     sub(message);
                 });
-
             });
         },
         put: function(url, data, callback) {
@@ -50,7 +49,6 @@ angular.module('sailsResource').factory('mockSocket', function() {
                 angular.forEach(subscribers['widget'], function(sub) {
                     sub(message);
                 });
-
             });
         },
         delete: function(url, callback) {
