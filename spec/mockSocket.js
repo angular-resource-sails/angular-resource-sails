@@ -4,12 +4,11 @@ angular.module('sailsResource').factory('mockSocket', function() {
         { id: 1, data: 'abc' },{ id: 2, data: 'def' },{ id: 3, data: 'hij' }
     ];
     var queue = [];
-    var subscribers = {};
+    var subscribers = [];
 
     return {
         on: function(message, callback){
-            if(!subscribers[message]) subscribers[message] = [];
-            subscribers[message].push(callback);
+            subscribers.push(callback);
         },
         get: function(url, callback) {
             queue.push(function() {
@@ -31,8 +30,8 @@ angular.module('sailsResource').factory('mockSocket', function() {
                 widgets.push(updated);
                 callback(updated);
 
-                var message = { verb: 'created', id: updated.id, data: updated };
-                angular.forEach(subscribers['widget'], function(sub) {
+                var message = { model: 'widget', verb: 'create', id: updated.id, data: updated };
+                angular.forEach(subscribers, function(sub) {
                     sub(message);
                 });
             });
@@ -45,8 +44,8 @@ angular.module('sailsResource').factory('mockSocket', function() {
                 widgets[updated.id-1] = updated;
                 callback(updated);
 
-                var message = { verb: 'updated', id: updated.id, data: updated };
-                angular.forEach(subscribers['widget'], function(sub) {
+                var message = { model: 'widget', verb: 'update', id: updated.id, data: updated };
+                angular.forEach(subscribers, function(sub) {
                     sub(message);
                 });
             });
@@ -58,8 +57,8 @@ angular.module('sailsResource').factory('mockSocket', function() {
                 widgets.splice(id, 1);
                 callback({});
 
-                var message = { verb: 'destroyed', id: id };
-                angular.forEach(subscribers['widget'], function(sub) {
+                var message = { model: 'widget', verb: 'destroy', id: id };
+                angular.forEach(subscribers, function(sub) {
                     sub(message);
                 });
             });

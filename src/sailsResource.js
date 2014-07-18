@@ -105,47 +105,52 @@
                 };
 
                 // subscribe to changes
-                socket.on(model, function (message) {
-                    if (message.verb == 'updated') {
-                        var cachedItem = itemCache[+message.id];
-                        if (cachedItem) {
-                            $rootScope.$apply(function () {
-                                angular.copy(message.data, cachedItem);
-                            });
-                        }
+                socket.on('message', function (message) {
+                    if(message.model != model) return;
 
-                        // update this item in all known lists
-                        angular.forEach(listCache, function(list) {
-                            angular.forEach(list, function(item) {
-                                if(+item.id == +message.id) {
-                                    $rootScope.$apply(function() {
-                                        angular.copy(message.data, item);
-                                    });
-                                }
-                            });
-                        });
-                    }
-                    else if (message.verb == 'created') {
-                        itemCache[+message.id] = message.data;
-                        angular.forEach(listCache, function(list, key) {
-                            Resource.query(JSON.parse(key)); // retrieve queries again
-                        });
-                    }
-                    else if (message.verb == 'destroyed') {
-                        delete itemCache[+message.id];
-
-                        // remove this item in all known lists
-                        angular.forEach(listCache, function(list) {
-                            var foundIndex = null;
-                            angular.forEach(list, function(item, index) {
-                                if(+item.id == +message.id) {
-                                    foundIndex = index;
-                                }
-                            });
-                            if(foundIndex) {
-                                list.splice(foundIndex, 1);
+                    switch(message.verb) {
+                        case 'update':
+                            var cachedItem = itemCache[+message.id];
+                            if (cachedItem) {
+                                $rootScope.$apply(function () {
+                                    angular.copy(message.data, cachedItem);
+                                });
                             }
-                        });
+
+                            // update this item in all known lists
+                            angular.forEach(listCache, function(list) {
+                                angular.forEach(list, function(item) {
+                                    if(+item.id == +message.id) {
+                                        $rootScope.$apply(function() {
+                                            angular.copy(message.data, item);
+                                        });
+                                    }
+                                });
+                            });
+                            break;
+                        case 'create':
+                            itemCache[+message.id] = message.data;
+                            angular.forEach(listCache, function(list, key) {
+                                Resource.query(JSON.parse(key)); // retrieve queries again
+                            });
+                            break;
+                        case 'destroy':
+
+                            delete itemCache[+message.id];
+
+                            // remove this item in all known lists
+                            angular.forEach(listCache, function(list) {
+                                var foundIndex = null;
+                                angular.forEach(list, function(item, index) {
+                                    if(+item.id == +message.id) {
+                                        foundIndex = index;
+                                    }
+                                });
+                                if(foundIndex) {
+                                    list.splice(foundIndex, 1);
+                                }
+                            });
+                            break;
                     }
                 });
 
