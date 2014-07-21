@@ -7,7 +7,7 @@ angular-resource-sails bridges this gap by allowing you to create service object
 
 Install
 =====================
-Include 'angular-resource-sails' in your bower.json file. At this time we recommend getting the latest version. Alternatively, incldue the sailsResource.js file in your project.
+Include 'angular-resource-sails' in your bower.json file. At this time we recommend getting the latest version. Alternatively, include the sailsResource.js file in your project.
 
 Then, in your Angular application dependencies include 'sailsResource' as one of them.
 
