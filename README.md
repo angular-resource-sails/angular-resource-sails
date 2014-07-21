@@ -5,6 +5,16 @@ Sails.js is a realtime MVC framework built for NodeJS. Angular is a front end fr
 
 angular-resource-sails bridges this gap by allowing you to create service objects that behave like those from ngResource but do all of their updating through Sails.js socket.io connections. It also sets up the binding necessary for realtime updates to affect the client. 
 
+Install
+=====================
+Include 'angular-resource-sails' in your bower.json file. At this time we recommend getting the latest version. Alternatively, incldue the sailsResource.js file in your project.
+
+Then, in your Angular application dependencies include 'sailsResource' as one of them.
+
+```
+angular.module('myApp', ['sailsResource']);
+```
+
 
 Usage
 ======================
