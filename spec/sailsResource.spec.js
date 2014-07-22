@@ -95,6 +95,14 @@ describe('sailsResource', function() {
                 expect(item.id).toEqual(socket.itemCount());
                 expect(socket.itemCount()).toEqual(originalCount+1);
             });
+
+            it('should not send $ properties', function() {
+                item.$save();
+                socket.flush();
+
+                var items = socket.items();
+                expect(items[items.length-1].$save).toBeUndefined();
+            });
         });
 
         describe('updates', function() {
@@ -114,6 +122,12 @@ describe('sailsResource', function() {
 
                 socket.flush();
                 expect(item.lastUpdate).toBeDefined();
+            });
+
+            it('should not send $ properties', function() {
+                item.$save();
+                socket.flush();
+                expect(socket.items()[0].$save).toBeUndefined();
             });
         });
 

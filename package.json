@@ -18,6 +18,6 @@
         "Jason More <jason.more@gmail.com> (http://jasonmore.net)"
     ],
     "dependencies": {
-        "sails": "~0.10.x"
+        "sails": "~0.9.16"
     }
 }

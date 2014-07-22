@@ -1,4 +1,26 @@
 (function(angular) {
+
+    /**
+     * Create a shallow copy of an object and clear other fields from the destination.
+     * Taken from ngResource source.
+     * https://code.angularjs.org/1.2.20/angular-resource.js
+     */
+    function shallowClearAndCopy(src, dst) {
+        dst = dst || {};
+
+        angular.forEach(dst, function(value, key){
+            delete dst[key];
+        });
+
+        for (var key in src) {
+            if (src.hasOwnProperty(key) && !(key.charAt(0) === '$' && key.charAt(1) === '$')) {
+                dst[key] = src[key];
+            }
+        }
+
+        return dst;
+    }
+
     angular.module('sailsResource', [])
         .factory('sailsResource', ['$rootScope', '$window', function ($rootScope, $window) {
 
@@ -26,12 +48,8 @@
                 var listCache = {};
 
                 // Resource constructor
-                function Resource(id, item) {
-                    this.id = id;
-                    this.$resolved = false;
-                    if (item) {
-                        angular.copy(item, this); // copy all properties if we're wrapping
-                    }
+                function Resource(value) {
+                    shallowClearAndCopy(value || {}, this)
                 }
 
                 // Retrieve list of models
@@ -46,7 +64,7 @@
                         $rootScope.$apply(function () {
                             while(list.length) list.pop();
                             angular.forEach(response, function (responseItem) {
-                                var item = new Resource(responseItem.id, responseItem);
+                                var item = new Resource(responseItem);
                                 item.$resolved = true;
                                 list.push(item); // update list
                             });
@@ -58,7 +76,7 @@
                 // Retrieve individual instance of model
                 Resource.get = function (id) {
 
-                    var item = itemCache[+id] || new Resource(+id); // empty item for now
+                    var item = itemCache[+id] || new Resource({ id: +id }); // empty item for now
                     itemCache[+id] = item;
 
                     // TODO doing a get here no matter what, does that make sense?
@@ -76,16 +94,17 @@
                     // Update individual instance of model
                     $save: function () {
                         var self = this;
+                        var data = shallowClearAndCopy(this, {}); // prevents prototype functions being sent
 
                         if (!this.id) { // A new model, use POST
-                            socket.post('/' + model, this, function(response) {
+                            socket.post('/' + model, data, function(response) {
                                 $rootScope.$apply(function () {
                                     angular.copy(response, self);
                                 });
                             });
                         }
                         else { // An existing model, use PUT
-                            socket.put('/' + model + '/' + this.id, this, function (response) {
+                            socket.put('/' + model + '/' + this.id, data, function (response) {
                                 $rootScope.$apply(function () {
                                     angular.copy(response, self);
                                 });

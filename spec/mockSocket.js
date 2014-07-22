@@ -73,6 +73,9 @@ angular.module('sailsResource').factory('mockSocket', function() {
         queueCount: function() {
             return queue.length;
         },
+        items: function() {
+            return widgets;
+        },
         itemCount: function() {
             return widgets.length;
         }
