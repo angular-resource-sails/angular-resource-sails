@@ -34,20 +34,33 @@ var items = sailsResource('item').query(); // GET /item
 
 ###Get a single model instance
 ```
-var item = sailsResource('item').get(53); // GET /item/53
+var item = sailsResource('item').get({ id: 53 }); // GET /item/53
 ```
 
 ###Update a model instance
 ```
-var item = sailsResource('item').get(53);
+var item = sailsResource('item').get({ id: 53 });
 item.data = 'def';
 item.$save(); // PUT /item/53 (if the item has an id)
 ```
 
 ###Delete a model instance
 ```
-var item = sailsResource('item').get(53);
+var item = sailsResource('item').get({ id: 53 });
 item.$delete(); // DELETE /item/53
+```
+
+###Success and error callbacks
+```
+// Works like ngResource - can optionally provide callbacks
+var item = sailsResource('item').get({ id: 'notreal' }, 
+  function(response) { // first function is success handler
+    // Handle success
+  },
+  function(response) { // second function is error handler
+    // Handle error
+  });
+
 ```
 
 Realtime updates
