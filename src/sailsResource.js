@@ -32,7 +32,8 @@
 
     var forEach = angular.forEach,
         extend = angular.extend,
-        copy = angular.copy;
+        copy = angular.copy,
+        isFunction = angular.isFunction;
 
     angular.module('sailsResource', [])
         .factory('sailsResource', ['$rootScope', '$window', function ($rootScope, $window) {
@@ -90,55 +91,73 @@
                                     });
                                 });
                                 return list;
-                            }
+                            };
                         }
                         else {
                             // Retrieve individual instance of model
-                            Resource[name] = function (id) {
-                                var item = cache[+id] || new Resource({ id: +id }); // empty item for now
-                                cache[+id] = item;
+                            Resource[name] = function (params, success, error) {
+                                var item = cache[+params.id] || new Resource({ id: +params.id }); // empty item for now
+                                cache[+params.id] = item;
 
                                 // TODO doing a get here no matter what, does that make sense?
-                                socket.get('/' + model + '/' + id, function (response) {
-                                    $rootScope.$apply(function () {
-                                        copy(response, item); // update item
-                                        item.$resolved = true;
-                                    });
+                                socket.get('/' + model + '/' + params.id, function (response) {
+                                    if(response.errors && isFunction(error)) {
+                                        error(response);
+                                    }
+                                    else {
+                                        $rootScope.$apply(function () {
+                                            copy(response, item); // update item
+                                            item.$resolved = true;
+                                        });
+                                        if(isFunction(success)) {
+                                            success(response);
+                                        }
+                                    }
                                 });
                                 return item;
-                            }
+                            };
                         }
                     }
+                    // Non-GET methods apply to instances of Resource and are added to the prototype with $ prefix
                     else if(action.method == 'POST' || action.method == 'PUT') {
                         // Update individual instance of model
-                        Resource.prototype['$' + name ] = function() {
+                        Resource.prototype['$' + name ] = function(params, success, error) {
                             var self = this;
                             var data = shallowClearAndCopy(this, {}); // prevents prototype functions being sent
 
-                            if (!this.id) { // A new model, use POST
-                                socket.post('/' + model, data, function(response) {
+                            // when Resource has id use PUT, otherwise use POST
+                            var url = this.id ? '/' + model + '/' + this.id : '/' + model;
+                            var method = this.id ? 'put' : 'post';
+
+                            socket[method](url, data, function(response) {
+                                if(response.errors && isFunction(error)) {
+                                    error(response);
+                                }
+                                else {
                                     $rootScope.$apply(function () {
                                         copy(response, self);
                                     });
-                                });
-                            }
-                            else { // An existing model, use PUT
-                                socket.put('/' + model + '/' + this.id, data, function (response) {
-                                    $rootScope.$apply(function () {
-                                        copy(response, self);
-                                    });
-                                });
-                            }
-                        }
+                                    if(isFunction(success)) {
+                                        success(response);
+                                    }
+                                }
+                            });
+                        };
                     }
                     else if(action.method == 'DELETE') {
                         // Delete individual instance of model
-                        Resource.prototype['$' + name] = function() {
+                        Resource.prototype['$' + name] = function(params, success, error) {
                             var self = this;
                             socket.delete('/' + model + '/' + this.id, function (response) {
-                                // leave local instance unmodified?
+                                if(response.errors && isFunction(error)) {
+                                    error(response);
+                                }
+                                else if(isFunction(success)) {
+                                    success(response)
+                                }
+                                // leave local instance unmodified
                             });
-                        }
+                        };
                     }
                 });
 

@@ -53,7 +53,7 @@ describe('sailsResource', function() {
 
         var item;
         beforeEach(function() {
-            item = service.get(1);
+            item = service.get({id:1});
         });
 
         it('should return an empty Resource immediately', function() {
@@ -66,12 +66,26 @@ describe('sailsResource', function() {
             expect(item.id).toEqual(1);
             expect(item.data).toEqual('abc');
         });
+
+        it('should use callbacks for success and error', function() {
+            var successHandler = jasmine.createSpy('successHandler');
+            var errorHandler = jasmine.createSpy('errorHandler');
+
+            item = service.get({id:2}, successHandler, errorHandler);
+            socket.flush();
+            expect(successHandler).toHaveBeenCalled();
+            expect(errorHandler).not.toHaveBeenCalled();
+
+            item = service.get({id:999}, successHandler, errorHandler);
+            socket.flush();
+            expect(errorHandler).toHaveBeenCalled();
+        });
     });
 
     describe('Resource', function() {
 
         it('should have custom actions', function() {
-            var item = service.get(1);
+            var item = service.get({id:1});
             expect(item.$update).toBeDefined();
         });
 
@@ -101,13 +115,34 @@ describe('sailsResource', function() {
                 var items = socket.items();
                 expect(items[items.length-1].$save).toBeUndefined();
             });
+
+            it('should use callbacks for success', function() {
+                var successHandler = jasmine.createSpy('successHandler');
+                var errorHandler = jasmine.createSpy('errorHandler');
+
+                item.$save({}, successHandler, errorHandler);
+                socket.flush();
+                expect(successHandler).toHaveBeenCalled();
+                expect(errorHandler).not.toHaveBeenCalled();
+            });
+
+            it('should use callbacks for error', function() {
+                var successHandler = jasmine.createSpy('successHandler');
+                var errorHandler = jasmine.createSpy('errorHandler');
+
+                item.unique = '4aa';
+                item.$save({}, successHandler, errorHandler);
+                socket.flush();
+                expect(successHandler).not.toHaveBeenCalled();
+                expect(errorHandler).toHaveBeenCalled();
+            });
         });
 
         describe('updates', function() {
 
             var item;
             beforeEach(function() {
-                item = service.get(1);
+                item = service.get({id:1});
                 socket.flush();
             });
 
@@ -134,13 +169,28 @@ describe('sailsResource', function() {
                 socket.flush();
                 expect(item.lastUpdate).toBeDefined();
             });
+
+            it('should use callbacks for success and error', function() {
+                var successHandler = jasmine.createSpy('successHandler');
+                var errorHandler = jasmine.createSpy('errorHandler');
+
+                item.$save({}, successHandler, errorHandler);
+                socket.flush();
+                expect(successHandler).toHaveBeenCalled();
+                expect(errorHandler).not.toHaveBeenCalled();
+
+                item.id = 999;
+                item.$save({}, successHandler, errorHandler);
+                socket.flush();
+                expect(errorHandler).toHaveBeenCalled();
+            });
         });
 
         describe('deletes', function() {
 
             var item, originalCount;
             beforeEach(function() {
-                item = service.get(1);
+                item = service.get({id:1});
                 originalCount = socket.itemCount();
                 socket.flush();
             });
@@ -164,6 +214,20 @@ describe('sailsResource', function() {
                 socket.flush();
                 expect(list.length).toEqual(originalCount-1);
                 expect(list[0].id).not.toEqual(item.id);
+            });
+
+            it('should use callbacks for success and error', function() {
+                var successHandler = jasmine.createSpy('successHandler');
+                var errorHandler = jasmine.createSpy('errorHandler');
+
+                item.$delete({}, successHandler, errorHandler);
+                socket.flush();
+                expect(successHandler).toHaveBeenCalled();
+                expect(errorHandler).not.toHaveBeenCalled();
+
+                item.$delete({}, successHandler, errorHandler);
+                socket.flush();
+                expect(errorHandler).toHaveBeenCalled();
             });
         });
     });

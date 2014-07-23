@@ -82,8 +82,8 @@ describe('multiple sailsResources', function() {
     describe('instances', function() {
         var item1, item2;
         beforeEach(function() {
-            item1 = service1.get(1);
-            item2 = service2.get(1);
+            item1 = service1.get({id:1});
+            item2 = service2.get({id:1});
             socket.flush();
         });
 
@@ -103,7 +103,7 @@ describe('multiple sailsResources', function() {
         it('should send destroyed messages asynchronously', function() {
             item1.$delete();
             socket.flush();
-            var item3 = service2.get(1);
+            var item3 = service2.get({id:1});
             expect(item3.data).toBeUndefined();
         });
 
