@@ -14,6 +14,18 @@ describe('multiple sailsResources', function() {
                 socket: socket
             });
         });
+
+        jasmine.addMatchers({
+            toEqualValues: function() {
+                return {
+                    compare: function(actual, expected) {
+                        return {
+                            pass: JSON.stringify(actual) == JSON.stringify(expected)
+                        };
+                    }
+                };
+            }
+        });
     });
 
     afterEach(function() {
@@ -32,7 +44,7 @@ describe('multiple sailsResources', function() {
 
         it('should have different lists with the same data', function() {
             expect(list1).not.toBe(list2);
-            expect(list1).toEqual(list2);
+            expect(list1).toEqualValues(list2)
         });
 
         it('should send created messages asynchronously', function() {
@@ -77,7 +89,7 @@ describe('multiple sailsResources', function() {
 
         it('should be different objects with the same data', function() {
             expect(item1).not.toBe(item2);
-            expect(item1).toEqual(item2);
+            expect(item1).toEqualValues(item2);
         });
 
         it('should send updated messages asynchronously', function() {
@@ -85,7 +97,7 @@ describe('multiple sailsResources', function() {
             item1.$save();
             expect(item1).not.toEqual(item2);
             socket.flush();
-            expect(item1).toEqual(item2);
+            expect(item1).toEqualValues(item2);
         });
 
         it('should send destroyed messages asynchronously', function() {

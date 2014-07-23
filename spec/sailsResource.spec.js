@@ -6,7 +6,7 @@ describe('sailsResource', function() {
         module('sailsResource');
         inject(function(sailsResource, mockSocket) {
             socket = mockSocket;
-            service = sailsResource('widget', null, {
+            service = sailsResource('widget', {'update' : { method: 'PUT' }}, {
                 socket: socket
             });
         });
@@ -70,6 +70,11 @@ describe('sailsResource', function() {
 
     describe('Resource', function() {
 
+        it('should have custom actions', function() {
+            var item = service.get(1);
+            expect(item.$update).toBeDefined();
+        });
+
         describe('create', function() {
 
             var item, originalCount;
@@ -121,6 +126,13 @@ describe('sailsResource', function() {
                 item.$save();
                 socket.flush();
                 expect(socket.items()[0].$save).toBeUndefined();
+            });
+
+            it('should work with custom methods', function() {
+                item.data = 'zyz';
+                item.$update();
+                socket.flush();
+                expect(item.lastUpdate).toBeDefined();
             });
         });
 
