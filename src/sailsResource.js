@@ -101,18 +101,18 @@
 
                                 // TODO doing a get here no matter what, does that make sense?
                                 socket.get('/' + model + '/' + params.id, function (response) {
-                                    if(response.errors && isFunction(error)) {
-                                        error(response);
-                                    }
-                                    else {
-                                        $rootScope.$apply(function () {
+                                    $rootScope.$apply(function() {
+                                        if(response.errors && isFunction(error)) {
+                                            error(response);
+                                        }
+                                        else {
                                             copy(response, item); // update item
                                             item.$resolved = true;
-                                        });
-                                        if(isFunction(success)) {
-                                            success(response);
+                                            if(isFunction(success)) {
+                                                success(response);
+                                            }
                                         }
-                                    }
+                                    });
                                 });
                                 return item;
                             };
@@ -130,32 +130,33 @@
                             var method = this.id ? 'put' : 'post';
 
                             socket[method](url, data, function(response) {
-                                if(response.errors && isFunction(error)) {
-                                    error(response);
-                                }
-                                else {
-                                    $rootScope.$apply(function () {
-                                        copy(response, self);
-                                    });
-                                    if(isFunction(success)) {
-                                        success(response);
+                                $rootScope.$apply(function() {
+                                    if(response.errors && isFunction(error)) {
+                                        error(response);
                                     }
-                                }
+                                    else {
+                                        copy(response, self);
+                                        if(isFunction(success)) {
+                                            success(response);
+                                        }
+                                    }
+                                });
                             });
                         };
                     }
                     else if(action.method == 'DELETE') {
                         // Delete individual instance of model
                         Resource.prototype['$' + name] = function(params, success, error) {
-                            var self = this;
-                            socket.delete('/' + model + '/' + this.id, function (response) {
-                                if(response.errors && isFunction(error)) {
-                                    error(response);
-                                }
-                                else if(isFunction(success)) {
-                                    success(response)
-                                }
-                                // leave local instance unmodified
+;                            socket.delete('/' + model + '/' + this.id, function (response) {
+                                $rootScope.$apply(function() {
+                                    if(response.errors && isFunction(error)) {
+                                        error(response);
+                                    }
+                                    else if(isFunction(success)) {
+                                        success(response)
+                                    }
+                                    // leave local instance unmodified
+                                });
                             });
                         };
                     }
