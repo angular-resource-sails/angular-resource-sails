@@ -6,13 +6,11 @@ describe('multiple sailsResources', function() {
         module('sailsResource');
         inject(function(sailsResource, mockSocket) {
             socket = mockSocket;
-            service1 = sailsResource({
-                model: 'widget',
+            service1 = sailsResource('widget', null, {
                 socket: socket
             });
 
-            service2 = sailsResource({
-                model: 'widget',
+            service2 = sailsResource('widget', null, {
                 socket: socket
             });
         });

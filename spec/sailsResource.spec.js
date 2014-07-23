@@ -6,8 +6,7 @@ describe('sailsResource', function() {
         module('sailsResource');
         inject(function(sailsResource, mockSocket) {
             socket = mockSocket;
-            service = sailsResource({
-                model: 'widget',
+            service = sailsResource('widget', null, {
                 socket: socket
             });
         });
@@ -25,16 +24,10 @@ describe('sailsResource', function() {
         expect(function() {
             sailsResource('');
         }).toThrow();
-        expect(function() {
-            sailsResource({model: null});
-        }).toThrow();
 
         // valid inputs
         expect(function() {
             sailsResource('widget');
-        }).not.toThrow();
-        expect(function() {
-            sailsResource({model: 'widget'});
         }).not.toThrow();
     }));
 
@@ -142,11 +135,23 @@ describe('sailsResource', function() {
 
             it('should remove the item asynchronously', function() {
                 item.$delete();
-                expect(item.id).toBeDefined();
                 expect(socket.itemCount()).toEqual(originalCount);
-
                 socket.flush();
-                expect(item.id).toBeUndefined();
+                expect(socket.itemCount()).toEqual(originalCount-1);
+            });
+
+            it('should remove the item from all arrays', function() {
+                var list = service.query();
+                socket.flush();
+
+                item = list[0];
+                originalCount = list.length;
+                expect(item.id).toBeDefined();
+
+                item.$delete();
+                socket.flush();
+                expect(list.length).toEqual(originalCount-1);
+                expect(list[0].id).not.toEqual(item.id);
             });
         });
     });

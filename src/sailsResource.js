@@ -1,5 +1,7 @@
 (function(angular) {
 
+    var $resourceMinErr = angular.$$minErr('$resource');
+
     /**
      * Create a shallow copy of an object and clear other fields from the destination.
      * Taken from ngResource source.
@@ -21,31 +23,44 @@
         return dst;
     }
 
+    /**
+     * Test if an input is an integer.
+     */
+    function isInt(input) {
+        return !isNaN(input) && parseInt(Number(input)) == input;
+    }
+
+    var forEach = angular.forEach,
+        copy = angular.copy;
+
     angular.module('sailsResource', [])
         .factory('sailsResource', ['$rootScope', '$window', function ($rootScope, $window) {
 
-            var $resourceMinErr = angular.$$minErr('$resource');
+            // TODO use these
+            var DEFAULT_ACTIONS = {
+                'get':    {method:'GET'},
+                'save':   {method:'POST'},
+                'query':  {method:'GET', isArray:true},
+                'remove': {method:'DELETE'},
+                'delete': {method:'DELETE'}
+            };
 
-            return function (options) {
+            return function (model, actions, options) {
 
-                if((typeof options == 'string' && options.length == 0) ||
-                    (typeof options != 'string' && !options.model && options.model.length == 0)) {
+                if(typeof model != 'string' || model.length == 0) {
                     throw $resourceMinErr('badargs', 'Model name is required');
                 }
 
-                // Options
-                var model;
-                if (typeof options == 'string') {
-                    model = options;
+                var origin, socket;
+                if(typeof options == 'object') {
+                    origin = options.origin || $window.location.origin;
+                    socket = options.socket || $window.io.connect(origin);
                 }
-                else if (typeof options == 'object' && options.model) {
-                    model = options.model;
+                else {
+                    origin = $window.location.origin;
+                    socket = $window.io.connect(origin);
                 }
-
-                var origin = options.origin || $window.location.origin;
-                var socket = options.socket || $window.io.connect(origin);
-                var itemCache = {};
-                var listCache = {};
+                var cache = {};
 
                 // Resource constructor
                 function Resource(value) {
@@ -56,14 +71,14 @@
                 Resource.query = function (params) {
 
                     var key = JSON.stringify(params || {});
-                    var list = listCache[key] || [];
-                    listCache[key] = list;
+                    var list = cache[key] || [];
+                    cache[key] = list;
 
                     // TODO doing a get here no matter what, does that make sense?
                     socket.get('/' + model, function (response) {
                         $rootScope.$apply(function () {
                             while(list.length) list.pop();
-                            angular.forEach(response, function (responseItem) {
+                            forEach(response, function (responseItem) {
                                 var item = new Resource(responseItem);
                                 item.$resolved = true;
                                 list.push(item); // update list
@@ -76,13 +91,13 @@
                 // Retrieve individual instance of model
                 Resource.get = function (id) {
 
-                    var item = itemCache[+id] || new Resource({ id: +id }); // empty item for now
-                    itemCache[+id] = item;
+                    var item = cache[+id] || new Resource({ id: +id }); // empty item for now
+                    cache[+id] = item;
 
                     // TODO doing a get here no matter what, does that make sense?
                     socket.get('/' + model + '/' + id, function (response) {
                         $rootScope.$apply(function () {
-                            angular.copy(response, item); // update item
+                            copy(response, item); // update item
                             item.$resolved = true;
                         });
                     });
@@ -99,14 +114,14 @@
                         if (!this.id) { // A new model, use POST
                             socket.post('/' + model, data, function(response) {
                                 $rootScope.$apply(function () {
-                                    angular.copy(response, self);
+                                    copy(response, self);
                                 });
                             });
                         }
                         else { // An existing model, use PUT
                             socket.put('/' + model + '/' + this.id, data, function (response) {
                                 $rootScope.$apply(function () {
-                                    angular.copy(response, self);
+                                    copy(response, self);
                                 });
                             });
                         }
@@ -116,9 +131,7 @@
                     $delete: function () {
                         var self = this;
                         socket.delete('/' + model + '/' + this.id, function (response) {
-                            $rootScope.$apply(function() {
-                                angular.copy(response, self);
-                            });
+                            // leave local instance unmodified?
                         });
                     }
                 };
@@ -129,44 +142,46 @@
 
                     switch(message.verb) {
                         case 'update':
-                            var cachedItem = itemCache[+message.id];
-                            if (cachedItem) {
-                                $rootScope.$apply(function () {
-                                    angular.copy(message.data, cachedItem);
-                                });
-                            }
-
                             // update this item in all known lists
-                            angular.forEach(listCache, function(list) {
-                                angular.forEach(list, function(item) {
-                                    if(+item.id == +message.id) {
-                                        $rootScope.$apply(function() {
-                                            angular.copy(message.data, item);
-                                        });
-                                    }
-                                });
+                            forEach(cache, function(cacheItem, key) {
+                                if(isInt(key) && key == +message.id) { // an id key
+                                    $rootScope.$apply(function () {
+                                        copy(message.data, cacheItem);
+                                    });
+                                }
+                                else {
+                                    forEach(cacheItem, function(item) {
+                                        if(item.id == +message.id) {
+                                            $rootScope.$apply(function() {
+                                                copy(message.data, item);
+                                            });
+                                        }
+                                    });
+                                }
                             });
                             break;
                         case 'create':
-                            itemCache[+message.id] = message.data;
-                            angular.forEach(listCache, function(list, key) {
-                                Resource.query(JSON.parse(key)); // retrieve queries again
+                            cache[+message.id] = message.data;
+                            forEach(cache, function(cacheItem, key) {
+                                if(!isInt(key)) { // a non id key
+                                    Resource.query(JSON.parse(key)); // retrieve queries again
+                                }
                             });
                             break;
                         case 'destroy':
-
-                            delete itemCache[+message.id];
-
+                            delete cache[+message.id];
                             // remove this item in all known lists
-                            angular.forEach(listCache, function(list) {
-                                var foundIndex = null;
-                                angular.forEach(list, function(item, index) {
-                                    if(+item.id == +message.id) {
-                                        foundIndex = index;
+                            forEach(cache, function(cacheItem, key) {
+                                if(!isInt(key)) {
+                                    var foundIndex = null;
+                                    forEach(cacheItem, function(item, index) {
+                                        if(item.id == +message.id) {
+                                            foundIndex = index;
+                                        }
+                                    });
+                                    if(foundIndex != null) {
+                                        cacheItem.splice(foundIndex, 1);
                                     }
-                                });
-                                if(foundIndex) {
-                                    list.splice(foundIndex, 1);
                                 }
                             });
                             break;
