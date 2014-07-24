@@ -47,6 +47,18 @@ describe('sailsResource', function() {
             socket.flush();
             expect(items.length).toEqual(socket.itemCount());
         });
+
+        it('should use callbacks for success', function() {
+            var successHandler = jasmine.createSpy('successHandler');
+            var errorHandler = jasmine.createSpy('errorHandler');
+
+            items = service.query(null, successHandler, errorHandler);
+            socket.flush();
+            expect(successHandler).toHaveBeenCalled();
+            expect(errorHandler).not.toHaveBeenCalled();
+
+            // is there ever an error scenario for queries?
+        });
     });
 
     describe('gets', function() {

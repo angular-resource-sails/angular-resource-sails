@@ -74,7 +74,7 @@
                     if(action.method == 'GET') {
                         if (action.isArray) {
                             // Retrieve list of models
-                            Resource[name] = function (params) {
+                            Resource[name] = function (params, success, error) {
                                 var key = JSON.stringify(params || {});
                                 var list = cache[key] || [];
                                 cache[key] = list;
@@ -82,12 +82,20 @@
                                 // TODO doing a get here no matter what, does that make sense?
                                 socket.get('/' + model, function (response) {
                                     $rootScope.$apply(function () {
-                                        while (list.length) list.pop();
-                                        forEach(response, function (responseItem) {
-                                            var item = new Resource(responseItem);
-                                            item.$resolved = true;
-                                            list.push(item); // update list
-                                        });
+                                        if(response.errors && isFunction(error)) {
+                                            error(response);
+                                        }
+                                        else {
+                                            while (list.length) list.pop();
+                                            forEach(response, function (responseItem) {
+                                                var item = new Resource(responseItem);
+                                                item.$resolved = true;
+                                                list.push(item); // update list
+                                            });
+                                            if(isFunction(success)) {
+                                                success(response);
+                                            }
+                                        }
                                     });
                                 });
                                 return list;
