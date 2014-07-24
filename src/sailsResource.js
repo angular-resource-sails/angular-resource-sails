@@ -85,64 +85,46 @@
                 }
 
                 forEach(actions, function(action, name) {
-                    if(action.method == 'GET') {
-                        if (action.isArray) {
-                            // Retrieve list of models
-                            Resource[name] = function (params, success, error) {
-                                var key = JSON.stringify(params || {});
-                                var list = cache[key] || [];
-                                cache[key] = list;
+                    if (action.method == 'GET') {
 
-                                var url = '/' + model + createQueryString(params)
+                        // GET actions go on the service itself
+                        Resource[name] = function (params, success, error) {
 
-                                // TODO doing a get here no matter what, does that make sense?
-                                socket.get(url, function (response) {
-                                    $rootScope.$apply(function () {
-                                        if(response.errors && isFunction(error)) {
-                                            error(response);
-                                        }
-                                        else {
-                                            while (list.length) list.pop();
+                            var url = '/' + model + (params && params.id ? '/' + params.id : '') + createQueryString(params),
+                            // cache key is query-string for lists, id for items
+                                key = action.isArray ? JSON.stringify(params || {}) : +params.id,
+                            // pull out of cache if available, otherwise create new instance
+                                item = action.isArray ? cache[key] || [] : cache[+params.id] || new Resource({ id: +params.id })
+
+                            cache[key] = item; // store in cache
+
+                            // TODO doing a get here no matter what, does that make sense?
+                            socket.get(url, function (response) {
+                                $rootScope.$apply(function () {
+                                    if (response.errors && isFunction(error)) {
+                                        error(response);
+                                    }
+                                    else {
+                                        if(action.isArray) { // empty the list and update with returned data
+                                            while (item.length) item.pop();
                                             forEach(response, function (responseItem) {
-                                                var item = new Resource(responseItem);
-                                                item.$resolved = true;
-                                                list.push(item); // update list
+                                                responseItem = new Resource(responseItem);
+                                                responseItem.$resolved = true;
+                                                item.push(responseItem); // update list
                                             });
-                                            if(isFunction(success)) {
-                                                success(response);
-                                            }
-                                        }
-                                    });
-                                });
-                                return list;
-                            };
-                        }
-                        else {
-                            // Retrieve individual instance of model
-                            Resource[name] = function (params, success, error) {
-                                var item = cache[+params.id] || new Resource({ id: +params.id }); // empty item for now
-                                cache[+params.id] = item;
-
-                                var url = '/' + model + '/' + params.id + createQueryString(params)
-
-                                // TODO doing a get here no matter what, does that make sense?
-                                socket.get('/' + model + '/' + params.id, function (response) {
-                                    $rootScope.$apply(function() {
-                                        if(response.errors && isFunction(error)) {
-                                            error(response);
                                         }
                                         else {
                                             copy(response, item); // update item
                                             item.$resolved = true;
-                                            if(isFunction(success)) {
-                                                success(response);
-                                            }
                                         }
-                                    });
+                                        if (isFunction(success)) {
+                                            success(response);
+                                        }
+                                    }
                                 });
-                                return item;
-                            };
-                        }
+                            });
+                            return item;
+                        };
                     }
                     // Non-GET methods apply to instances of Resource and are added to the prototype with $ prefix
                     else if(action.method == 'POST' || action.method == 'PUT') {
