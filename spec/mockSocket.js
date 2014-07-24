@@ -29,7 +29,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
         },
         get: function(url, callback) {
             queue.push(function() {
-                if(url == '/widget') { // query
+                if(url.indexOf('/widget/') == -1) { // query
                     callback(angular.copy(widgets, []));
                 }
                 else { // get

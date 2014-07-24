@@ -30,6 +30,20 @@
         return !isNaN(input) && parseInt(Number(input)) == input;
     }
 
+    function createQueryString(params) {
+        var qs = [];
+        if(params) {
+            qs.push('?');
+            forEach(params, function (value, key) {
+                if(key == 'id') return;
+                qs.push(key + '=' + value);
+                qs.push('&');
+            });
+            qs.pop(); // remove last &
+        }
+        return qs.join('');
+    }
+
     var forEach = angular.forEach,
         extend = angular.extend,
         copy = angular.copy,
@@ -79,8 +93,10 @@
                                 var list = cache[key] || [];
                                 cache[key] = list;
 
+                                var url = '/' + model + createQueryString(params)
+
                                 // TODO doing a get here no matter what, does that make sense?
-                                socket.get('/' + model, function (response) {
+                                socket.get(url, function (response) {
                                     $rootScope.$apply(function () {
                                         if(response.errors && isFunction(error)) {
                                             error(response);
@@ -106,6 +122,8 @@
                             Resource[name] = function (params, success, error) {
                                 var item = cache[+params.id] || new Resource({ id: +params.id }); // empty item for now
                                 cache[+params.id] = item;
+
+                                var url = '/' + model + '/' + params.id + createQueryString(params)
 
                                 // TODO doing a get here no matter what, does that make sense?
                                 socket.get('/' + model + '/' + params.id, function (response) {
