@@ -70,7 +70,8 @@ var service = sailsResource('item',
 		// create a custom PUT
 		'update' { method: 'PUT' }, // Resources will have $update method
 		// attach a transformResponse method
-		'query': { method: 'GET', isArray: true, transformResponse(response) { // overrides default query method
+		// overrides default query method
+		'query': { method: 'GET', isArray: true, transformResponse(response) {
 			return someCustomLogicToRun(response);
 		}}
 	}
