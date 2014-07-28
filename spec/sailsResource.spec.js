@@ -6,9 +6,15 @@ describe('sailsResource', function() {
         module('sailsResource');
         inject(function(sailsResource, mockSocket) {
             socket = mockSocket;
-            service = sailsResource('widget', {'update' : { method: 'PUT' }}, {
-                socket: socket
-            });
+            service = sailsResource('widget',
+                {
+                    'update': { method: 'PUT' },
+                    'transform': { method: 'GET', transformResponse: function(response) {
+                        response.data = 'transformed';
+                        return response;
+                    }}
+                },
+                {socket: socket});
         });
     });
 
@@ -30,6 +36,13 @@ describe('sailsResource', function() {
             sailsResource('widget');
         }).not.toThrow();
     }));
+
+    it('uses a given transformResponse function', function() {
+        var item = service.transform({id: 1});
+        socket.flush();
+        expect(item.data).toBeDefined();
+        expect(item.data).toEqual('transformed');
+    });
 
     describe('queries', function() {
 

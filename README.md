@@ -51,8 +51,8 @@ item.$delete(); // DELETE /item/53
 ```
 
 ###Success and error callbacks
+Works like ngResource - can optionally provide callbacks
 ```
-// Works like ngResource - can optionally provide callbacks
 var item = sailsResource('item').get({ id: 'notreal' }, 
   function(response) { // first function is success handler
     // Handle success
@@ -60,7 +60,22 @@ var item = sailsResource('item').get({ id: 'notreal' },
   function(response) { // second function is error handler
     // Handle error
   });
+```
 
+###Customize actions
+Works like ngResource
+```
+var service = sailsResource('item',
+	{
+		// create a custom PUT
+		'update' { method: 'PUT' }, // Resources will have $update method
+		// attach a transformResponse method
+		'query': { method: 'GET', isArray: true, transformResponse(response) { // overrides default query method
+			return someCustomLogicToRun(response);
+		}}
+	}
+};
+// More customizations to come!
 ```
 
 Realtime updates

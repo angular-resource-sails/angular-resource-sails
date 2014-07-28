@@ -95,7 +95,8 @@
                                 error(response);
                             }
                             else {
-                                if (isFunction(delegate)) delegate();
+                                if (isFunction(action.transformResponse)) response = action.transformResponse(response);
+                                if (isFunction(delegate)) delegate(response);
                                 if (isFunction(success)) success();
                             }
                         });
@@ -116,17 +117,17 @@
 
                             // TODO doing a get here no matter what, does that make sense?
                             socket.get(url, function (response) {
-                                handleResponse(response, success, error, function () {
+                                handleResponse(response, success, error, function (data) {
                                     if(action.isArray) { // empty the list and update with returned data
                                         while (item.length) item.pop();
-                                        forEach(response, function (responseItem) {
+                                        forEach(data, function (responseItem) {
                                             responseItem = new Resource(responseItem);
                                             responseItem.$resolved = true;
                                             item.push(responseItem); // update list
                                         });
                                     }
                                     else {
-                                        copy(response, item); // update item
+                                        copy(data, item); // update item
                                         item.$resolved = true;
                                     }
                                 });
@@ -146,8 +147,8 @@
                             var method = this.id ? 'put' : 'post';
 
                             socket[method](url, data, function(response) {
-                                handleResponse(response, success, error, function() {
-                                    copy(response, self);
+                                handleResponse(response, success, error, function(data) {
+                                    copy(data, self);
                                 });
                             });
                         };
@@ -189,6 +190,9 @@
                             break;
                         case 'create':
                             cache[+message.id] = message.data;
+                            // when a new item is created we have no way of knowing if it belongs in a cached list,
+                            // this necessitates doing a server fetch on all known lists
+                            // TODO does this make sense?
                             forEach(cache, function(cacheItem, key) {
                                 if(!isInt(key)) { // a non id key
                                     Resource.query(JSON.parse(key)); // retrieve queries again
