@@ -49,7 +49,7 @@ describe('sailsResource', function() {
         expect(item.data).toEqual('transformed request');
     });
 
-    it('should use a given transformResponse function', function() {
+    it('should use a given transformResponse', function() {
         var item = service.transformRetrieve({id: 1});
         socket.flush();
         expect(item.data).toBeDefined();
