@@ -30,6 +30,9 @@
         return !isNaN(input) && parseInt(Number(input)) == input;
     }
 
+    /**
+     * Create a query-string out of a set of parameters.
+     */
     function createQueryString(params) {
         var qs = [];
         if(params) {
@@ -85,6 +88,19 @@
                 }
 
                 forEach(actions, function(action, name) {
+
+                    function handleResponse(response, success, error, delegate) {
+                        $rootScope.$apply(function() {
+                            if (response.errors && isFunction(error)) {
+                                error(response);
+                            }
+                            else {
+                                if (isFunction(delegate)) delegate();
+                                if (isFunction(success)) success();
+                            }
+                        });
+                    }
+
                     if (action.method == 'GET') {
 
                         // GET actions go on the service itself
@@ -100,26 +116,18 @@
 
                             // TODO doing a get here no matter what, does that make sense?
                             socket.get(url, function (response) {
-                                $rootScope.$apply(function () {
-                                    if (response.errors && isFunction(error)) {
-                                        error(response);
+                                handleResponse(response, success, error, function () {
+                                    if(action.isArray) { // empty the list and update with returned data
+                                        while (item.length) item.pop();
+                                        forEach(response, function (responseItem) {
+                                            responseItem = new Resource(responseItem);
+                                            responseItem.$resolved = true;
+                                            item.push(responseItem); // update list
+                                        });
                                     }
                                     else {
-                                        if(action.isArray) { // empty the list and update with returned data
-                                            while (item.length) item.pop();
-                                            forEach(response, function (responseItem) {
-                                                responseItem = new Resource(responseItem);
-                                                responseItem.$resolved = true;
-                                                item.push(responseItem); // update list
-                                            });
-                                        }
-                                        else {
-                                            copy(response, item); // update item
-                                            item.$resolved = true;
-                                        }
-                                        if (isFunction(success)) {
-                                            success(response);
-                                        }
+                                        copy(response, item); // update item
+                                        item.$resolved = true;
                                     }
                                 });
                             });
@@ -138,16 +146,8 @@
                             var method = this.id ? 'put' : 'post';
 
                             socket[method](url, data, function(response) {
-                                $rootScope.$apply(function() {
-                                    if(response.errors && isFunction(error)) {
-                                        error(response);
-                                    }
-                                    else {
-                                        copy(response, self);
-                                        if(isFunction(success)) {
-                                            success(response);
-                                        }
-                                    }
+                                handleResponse(response, success, error, function() {
+                                    copy(response, self);
                                 });
                             });
                         };
@@ -155,16 +155,9 @@
                     else if(action.method == 'DELETE') {
                         // Delete individual instance of model
                         Resource.prototype['$' + name] = function(params, success, error) {
-;                            socket.delete('/' + model + '/' + this.id, function (response) {
-                                $rootScope.$apply(function() {
-                                    if(response.errors && isFunction(error)) {
-                                        error(response);
-                                    }
-                                    else if(isFunction(success)) {
-                                        success(response)
-                                    }
-                                    // leave local instance unmodified
-                                });
+                            socket.delete('/' + model + '/' + this.id, function (response) {
+                                handleResponse(response, success, error);
+                                // leaves local instance unmodified
                             });
                         };
                     }

@@ -11,6 +11,7 @@
     "keywords": [
         "sails",
         "angular",
+        "resource",
         "socket.io"
     ],
     "contributors": [
