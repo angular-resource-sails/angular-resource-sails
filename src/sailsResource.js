@@ -140,7 +140,13 @@
                         // Update individual instance of model
                         Resource.prototype['$' + name ] = function(params, success, error) {
                             var self = this;
-                            var data = shallowClearAndCopy(this, {}); // prevents prototype functions being sent
+
+                            // prep data
+                            var transformedData;
+                            if(isFunction(action.transformRequest)) {
+                                transformedData = JSON.parse(action.transformRequest(this));
+                            }
+                            var data = shallowClearAndCopy(transformedData || this, {}); // prevents prototype functions being sent
 
                             // when Resource has id use PUT, otherwise use POST
                             var url = this.id ? '/' + model + '/' + this.id : '/' + model;

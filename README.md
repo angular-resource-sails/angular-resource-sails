@@ -68,11 +68,18 @@ Works like ngResource
 var service = sailsResource('item',
 	{
 		// create a custom PUT
-		'update' { method: 'PUT' }, // Resources will have $update method
-		// attach a transformResponse method
-		// overrides default query method
+		'update' { method: 'PUT' }, // Resources will have $update function
+		// attach a transformResponse function
+		// overrides default query function
 		'query': { method: 'GET', isArray: true, transformResponse(response) {
+			// runs after response returns
 			return someCustomLogicToRun(response);
+		}},
+		// attach a transformRequest function
+		// overrides default $save function
+		'save': { method: 'POST', transformRequest(request) {
+			// runs before request is made
+			return JSON.stringify(someCustomLogicToRun(request));
 		}}
 	}
 };

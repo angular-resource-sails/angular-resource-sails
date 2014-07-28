@@ -9,8 +9,12 @@ describe('sailsResource', function() {
             service = sailsResource('widget',
                 {
                     'update': { method: 'PUT' },
-                    'transform': { method: 'GET', transformResponse: function(response) {
-                        response.data = 'transformed';
+                    'transformUpdate': { method: 'PUT', transformRequest: function(request) {
+                        request.data = 'transformed request';
+                        return JSON.stringify(request);
+                    }},
+                    'transformRetrieve': { method: 'GET', transformResponse: function(response) {
+                        response.data = 'transformed response';
                         return response;
                     }}
                 },
@@ -37,11 +41,19 @@ describe('sailsResource', function() {
         }).not.toThrow();
     }));
 
+    it('should use a given transformRequest', function() {
+        var item = service.get({id: 1});
+        socket.flush();
+        item.$transformUpdate();
+        expect(item.data).toBeDefined();
+        expect(item.data).toEqual('transformed request');
+    });
+
     it('should use a given transformResponse function', function() {
-        var item = service.transform({id: 1});
+        var item = service.transformRetrieve({id: 1});
         socket.flush();
         expect(item.data).toBeDefined();
-        expect(item.data).toEqual('transformed');
+        expect(item.data).toEqual('transformed response');
     });
 
     describe('queries', function() {
