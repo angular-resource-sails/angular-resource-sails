@@ -37,7 +37,7 @@ describe('sailsResource', function() {
         }).not.toThrow();
     }));
 
-    it('uses a given transformResponse function', function() {
+    it('should use a given transformResponse function', function() {
         var item = service.transform({id: 1});
         socket.flush();
         expect(item.data).toBeDefined();
