@@ -1,6 +1,6 @@
 {
     "name": "angular-resource-sails",
-    "version": "0.1.5",
+    "version": "0.2.0",
     "private": false,
     "description": "Angular $resource style service for accessing sails socket.io resources",
     "main": "",
@@ -19,6 +19,6 @@
         "Jason More <jason.more@gmail.com> (http://jasonmore.net)"
     ],
     "dependencies": {
-        "sails": "~0.9.16"
+        "sails": "^0.10.1"
     }
 }

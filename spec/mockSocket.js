@@ -62,7 +62,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
                     widgets.push(updated);
                     callback(updated);
 
-                    var message = { model: 'widget', verb: 'create', id: updated.id, data: updated };
+                    var message = { verb: 'created', id: updated.id, data: updated };
                     angular.forEach(subscribers, function(sub) {
                         sub(message);
                     });
@@ -82,7 +82,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
                     angular.copy(updated, widget);
                     callback(updated);
 
-                    var message = { model: 'widget', verb: 'update', id: updated.id, data: updated };
+                    var message = { verb: 'updated', id: updated.id, data: updated };
                     angular.forEach(subscribers, function (sub) {
                         sub(message);
                     });
@@ -107,7 +107,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
                 else {
                     widgets.splice(foundIndex, 1);
                     callback({});
-                    var message = { model: 'widget', verb: 'destroy', id: id };
+                    var message = { verb: 'destroyed', id: id };
                     angular.forEach(subscribers, function(sub) {
                         sub(message);
                     });

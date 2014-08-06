@@ -171,11 +171,9 @@
                 });
 
                 // subscribe to changes
-                socket.on('message', function (message) {
-                    if(message.model != model) return;
-
+                socket.on(model, function (message) {
                     switch(message.verb) {
-                        case 'update':
+                        case 'updated':
                             // update this item in all known lists
                             forEach(cache, function(cacheItem, key) {
                                 if(isInt(key) && key == +message.id) { // an id key
@@ -194,7 +192,7 @@
                                 }
                             });
                             break;
-                        case 'create':
+                        case 'created':
                             cache[+message.id] = message.data;
                             // when a new item is created we have no way of knowing if it belongs in a cached list,
                             // this necessitates doing a server fetch on all known lists
@@ -205,7 +203,7 @@
                                 }
                             });
                             break;
-                        case 'destroy':
+                        case 'destroyed':
                             delete cache[+message.id];
                             // remove this item in all known lists
                             forEach(cache, function(cacheItem, key) {
