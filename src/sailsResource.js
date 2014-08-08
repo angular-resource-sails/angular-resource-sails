@@ -196,7 +196,7 @@
                             });
                             break;
                         case 'created':
-                            cache[+message.id] = message.data;
+                            cache[+message.id] = new Resource(message.data);
                             // when a new item is created we have no way of knowing if it belongs in a cached list,
                             // this necessitates doing a server fetch on all known lists
                             // TODO does this make sense?
