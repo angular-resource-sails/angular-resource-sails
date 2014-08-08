@@ -1,12 +1,12 @@
 {
     "name": "angular-resource-sails",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "private": false,
     "description": "Angular $resource style service for accessing sails socket.io resources",
     "main": "",
     "repository": {
         "type": "git",
-        "url": "https://github.com/jpro-mn/angular-resource-sails.git"
+        "url": "https://github.com/xjpro/angular-resource-sails.git"
     },
     "keywords": [
         "sails",

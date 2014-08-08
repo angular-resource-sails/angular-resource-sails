@@ -160,7 +160,8 @@
                     else if(action.method == 'DELETE') {
                         // Delete individual instance of model
                         Resource.prototype['$' + name] = function(params, success, error) {
-                            socket.delete('/' + model + '/' + this.id, function (response) {
+                            var url = '/' + model + '/' + this.id;
+                            socket.delete(url, function (response) {
                                 handleResponse(response, success, error);
                                 // leaves local instance unmodified
                             });
@@ -170,6 +171,10 @@
 
                 // subscribe to changes
                 socket.on(model, function (message) {
+                    if(options.verbose) {
+                        console.log('sailsResource received \'' + model + '\' message: ', message);
+                    }
+
                     switch(message.verb) {
                         case 'updated':
                             // update this item in all known lists

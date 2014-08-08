@@ -7,11 +7,13 @@ describe('multiple sailsResources', function() {
         inject(function(sailsResource, mockSocket) {
             socket = mockSocket;
             service1 = sailsResource('widget', null, {
-                socket: socket
+                socket: socket,
+                verbose: true
             });
 
             service2 = sailsResource('widget', null, {
-                socket: socket
+                socket: socket,
+                verbose: true
             });
         });
 

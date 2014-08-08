@@ -18,7 +18,10 @@ describe('sailsResource', function() {
                         return response;
                     }}
                 },
-                {socket: socket});
+                {
+                    socket: socket,
+                    verbose: true
+                });
         });
     });
 

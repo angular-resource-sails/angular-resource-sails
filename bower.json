@@ -1,6 +1,6 @@
 {
     "name": "angular-resource-sails",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "main": "./src/sailsResource.js",
     "contributors": [
         "Joshua Prodahl <jprodahl@gmail.com>",
@@ -14,7 +14,8 @@
     ],
     "dependencies": {
         "angular-unstable": "latest",
-        "jasmine": "latest"
+        "jasmine": "latest",
+        "sails.io.js": "latest"
     },
     "devDependencies": {
         "angular-mocks": "latest"
