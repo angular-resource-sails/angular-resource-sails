@@ -67,6 +67,7 @@
                     throw 'Model name is required';
                 }
 
+                model = model.toLowerCase(); // sails always sends models lowercase
                 actions = extend({}, DEFAULT_ACTIONS, actions);
 
                 var origin, socket;
