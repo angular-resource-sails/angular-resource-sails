@@ -1,7 +1,5 @@
 (function(angular) {
 
-    var $resourceMinErr = angular.$$minErr('$resource');
-
     /**
      * Create a shallow copy of an object and clear other fields from the destination.
      * Taken from ngResource source.
@@ -66,7 +64,7 @@
             return function (model, actions, options) {
 
                 if(typeof model != 'string' || model.length == 0) {
-                    throw $resourceMinErr('badargs', 'Model name is required');
+                    throw 'Model name is required';
                 }
 
                 actions = extend({}, DEFAULT_ACTIONS, actions);
