@@ -36,7 +36,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
                     var id = /\/[^\/]+\/(\d+)/.exec(url)[1];
                     var widget = getWidget(id);
                     if(!widget) {
-                        callback({ status: 404, errors: ['Widget with id ' + id + ' could not be found']});
+                        callback({ status: 404, error: 'E_NOTFOUND', summary: 'Widget with id ' + id + ' could not be found'});
                     }
                     else {
                         callback(angular.copy(getWidget(id), {}));
@@ -56,7 +56,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
             queue.push(function() {
 
                 if(unique) {
-                    callback({ status: 409, errors: ['Widget with unique ' + data.unique + ' already exists']});
+                    callback({ status: 409, error: 'E_VALIDATION', summary: 'Widget with unique ' + data.unique + ' already exists'});
                 }
                 else {
                     widgets.push(updated);
@@ -76,7 +76,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
             queue.push(function() {
                 var widget = getWidget(updated.id);
                 if(!widget) {
-                    callback({ status: 404, errors: ['Widget with id ' + updated.id + ' could not be found']});
+                    callback({ status: 404, error: 'E_NOTFOUND', summary: 'Widget with id ' + updated.id + ' could not be found'});
                 }
                 else {
                     angular.copy(updated, widget);
@@ -102,7 +102,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
                 });
 
                 if(foundIndex == null) {
-                    callback({ status: 404, errors: ['Widget with id ' + id + ' could not be found']});
+                    callback({ status: 404, error: 'E_NOTFOUND', summary: 'Widget with id ' + id + ' could not be found'});
                 }
                 else {
                     widgets.splice(foundIndex, 1);

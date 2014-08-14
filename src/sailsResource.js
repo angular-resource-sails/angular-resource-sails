@@ -90,7 +90,7 @@
 
                     function handleResponse(response, success, error, delegate) {
                         $rootScope.$apply(function() {
-                            if (response.errors && isFunction(error)) {
+                            if (response.error && isFunction(error)) {
                                 error(response);
                             }
                             else {
