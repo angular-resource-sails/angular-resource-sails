@@ -104,17 +104,20 @@
 					if (action.method == 'GET') {
 
 						// GET actions go on the service itself
-						Resource[name] = function (params, success, error) {
+						Resource[name] = function (params, success, error, options) {
 
-							var url = '/' + model + (params && params.id ? '/' + params.id : '') + createQueryString(params),
 							// cache key is query-string for lists, id for items
-								key = action.isArray ? JSON.stringify(params || {}) : +params.id,
-							// pull out of cache if available, otherwise create new instance
-								item = action.isArray ? cache[key] || [] : cache[+params.id] || new Resource({ id: +params.id })
+							var	key = action.isArray ? JSON.stringify(params || {}) : +params.id;
+                            // pull out of cache if available, otherwise create new instance
+                            var item = action.isArray ? cache[key] || [] : cache[+params.id] || new Resource({ id: +params.id })
 
-							cache[key] = item; // store in cache
+                            if(item.$resolved && (!options || !options.force)) {
+                                return item; // resolved item was found, return without doing a call to server
+                            }
 
-							// TODO doing a get here no matter what, does that make sense?
+							cache[key] = item; // store blank item in cache
+                            var url = '/' + model + (params && params.id ? '/' + params.id : '') + createQueryString(params);
+
 							socket.get(url, function (response) {
 								handleResponse(response, success, error, function (data) {
 									if (action.isArray) { // empty the list and update with returned data
@@ -148,7 +151,7 @@
 							var data = shallowClearAndCopy(transformedData || this, {}); // prevents prototype functions being sent
 
 							// when Resource has id use PUT, otherwise use POST
-							var url = this.id ? '/' + model + '/' + this.id : '/' + model;
+                            var url = '/' + model + (params && params.id ? '/' + params.id : '') + createQueryString(params);
 							var method = this.id ? 'put' : 'post';
 
 							socket[method](url, data, function (response) {
@@ -203,7 +206,7 @@
 							// TODO does this make sense?
 							forEach(cache, function (cacheItem, key) {
 								if (!isInt(key)) { // a non id key
-									Resource.query(JSON.parse(key)); // retrieve queries again
+									Resource.query(JSON.parse(key), null, null, {force: true}); // force retrieve queries
 								}
 							});
 							break;
