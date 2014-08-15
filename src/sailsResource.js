@@ -96,7 +96,7 @@
                             else {
                                 if (isFunction(action.transformResponse)) response = action.transformResponse(response);
                                 if (isFunction(delegate)) delegate(response);
-                                if (isFunction(success)) success();
+                                if (isFunction(success)) success(response);
                             }
                         });
                     }
