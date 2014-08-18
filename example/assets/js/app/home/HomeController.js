@@ -1,20 +1,31 @@
 app.controller('HomeController', function (sailsResource) {
-  var simple = sailsResource('Simple');
+	var self = this;
 
-  this.simpleForm = {};
+	var simple = sailsResource('Simple');
 
-  this.simpleTypes = simple.query();
+	this.simpleForm = {};
+	load();
 
-  this.addClassicNgResource = function () {
-    var newSimple = new simple(this.simpleForm);
-    newSimple.$save();
+	this.addClassicNgResource = function () {
+		var newSimple = new simple(this.simpleForm);
+		newSimple.$save();
 
-    this.simpleForm = {};
-  };
+		this.simpleForm = {};
+	};
 
-  this.addJproWay = function(){
-    var newSimple = new simple();
-    angular.copy(this.simpleForm, newSimple);
-    newSimple.$save();
-  };
+	this.addJproWay = function () {
+		var newSimple = new simple();
+		angular.copy(this.simpleForm, newSimple);
+		newSimple.$save();
+		load();
+	};
+
+	this.deleteSimple = function (simple, index) {
+		simple.$delete();
+		load();
+	};
+
+	function load() {
+		self.simpleTypes = simple.query();
+	}
 });

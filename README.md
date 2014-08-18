@@ -90,3 +90,10 @@ Realtime updates
 ===============================
 
 All angular-resource-sails instances will be subscribed to socket.io updates. If the client recieves a create, update, or delete message from the server every instance already created will automatically update as needed.
+
+Development
+===============================
+1. `bower install`
+
+### Run Tests
+1. Open SpecRunner.html
