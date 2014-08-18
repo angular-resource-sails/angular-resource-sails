@@ -44,6 +44,31 @@ function resourceFactory($rootScope, $window) {
             shallowClearAndCopy(value || {}, this);
         }
 
+        function handleRequest(item, action, params, success, error) {
+
+            if(isFunction(params)) {
+                error = success; success = params; params = {};
+            }
+
+            if (action.method == 'GET') {
+                var	key = action.isArray ? JSON.stringify(params || {}) : +params.id; // cache key is query-string for lists, id for items
+                var item = action.isArray ? cache[key] || [] : cache[+params.id] || new Resource({ id: +params.id }); // pull out of cache if available, otherwise create new instance
+
+                if(item.$resolved) {
+                    return item; // resolved item was found, return without doing a call to server, note: this will always refetch for arrays
+                }
+
+                cache[key] = item; // store blank item in cache
+                return retrieveResource(item, action, params, success, error);
+            }
+            else if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
+                createOrUpdateResource(item, action, params, success, error, action);
+            }
+            else if (action.method == 'DELETE') { // Delete individual instance of model
+                deleteResource(item, action, params, success, error, action);
+            }
+        }
+
         function handleResponse(response, action, success, error, delegate) {
             $rootScope.$apply(function () {
                 if (response.error && isFunction(error)) {
@@ -78,7 +103,14 @@ function resourceFactory($rootScope, $window) {
             return item;
         }
 
-        function createOrUpdateResource(item, action, params, data, success, error) {
+        function createOrUpdateResource(item, action, params, success, error) {
+            // prep data
+            var transformedData;
+            if (isFunction(action.transformRequest)) {
+                transformedData = JSON.parse(action.transformRequest(item));
+            }
+            var data = shallowClearAndCopy(transformedData || item, {}); // prevents prototype functions being sent
+
             var url = '/' + model + (params && params.id ? '/' + params.id : '') + createQueryString(params);
             var method = item.id ? 'put' : 'post'; // when Resource has id use PUT, otherwise use POST
             socket[method](url, data, function (response) {
@@ -145,45 +177,19 @@ function resourceFactory($rootScope, $window) {
             });
         }
 
+        // Add each action to the Resource or its prototype
         forEach(actions, function (action, name) {
-            // GET actions go on the service itself
-            if (action.method == 'GET') {
-                Resource[name] = function (params, success, error) { // Get individual or list of model instances
+            // instance methods added to prototype with $ prefix
+            var isInstanceMethod = /^(POST|PUT|PATCH|DELETE)$/i.test(action.method);
+            var addTo = isInstanceMethod ? Resource.prototype : Resource;
+            var actionName = isInstanceMethod ? '$' + name : name;
 
-                    // cache key is query-string for lists, id for items
-                    var	key = action.isArray ? JSON.stringify(params || {}) : +params.id;
-                    // pull out of cache if available, otherwise create new instance
-                    var item = action.isArray ? cache[key] || [] : cache[+params.id] || new Resource({ id: +params.id });
-
-                    if(item.$resolved) {
-                        return item; // resolved item was found, return without doing a call to server
-                    }
-                    // Note: this will always refetch for arrays
-
-                    cache[key] = item; // store blank item in cache
-                    return retrieveResource(item, action, params, success, error);
-                };
-            }
-            // Non-GET methods apply to instances of Resource and are added to the prototype with $ prefix
-            else if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
-                Resource.prototype['$' + name ] = function (params, success, error) {
-                    // prep data
-                    var transformedData;
-                    if (isFunction(action.transformRequest)) {
-                        transformedData = JSON.parse(action.transformRequest(this));
-                    }
-                    var data = shallowClearAndCopy(transformedData || this, {}); // prevents prototype functions being sent
-                    createOrUpdateResource(this, action, params, data, success, error, action);
-                };
-            }
-            else if (action.method == 'DELETE') { // Delete individual instance of model
-                Resource.prototype['$' + name] = function (params, success, error) {
-                    deleteResource(this, action, params, success, error, action);
-                };
-            }
+            addTo[actionName] = function (params, success, error) {
+                return handleRequest(this, action, params, success, error);
+            };
         });
 
-        // subscribe to changes
+        // Subscribe to changes
         socket.on(model, function (message) {
             if (options.verbose) {
                 console.log('sailsResource received \'' + model + '\' message: ', message);

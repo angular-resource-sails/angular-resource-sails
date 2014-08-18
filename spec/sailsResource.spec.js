@@ -80,7 +80,7 @@ describe('sailsResource', function() {
             var successHandler = jasmine.createSpy('successHandler');
             var errorHandler = jasmine.createSpy('errorHandler');
 
-            items = service.query(null, successHandler, errorHandler);
+            items = service.query(successHandler, errorHandler);
             socket.flush();
             expect(successHandler).toHaveBeenCalled();
             expect(errorHandler).not.toHaveBeenCalled();
@@ -160,7 +160,7 @@ describe('sailsResource', function() {
                 var successHandler = jasmine.createSpy('successHandler');
                 var errorHandler = jasmine.createSpy('errorHandler');
 
-                item.$save({}, successHandler, errorHandler);
+                item.$save(successHandler, errorHandler);
                 socket.flush();
                 expect(successHandler).toHaveBeenCalled();
                 expect(errorHandler).not.toHaveBeenCalled();
@@ -171,7 +171,7 @@ describe('sailsResource', function() {
                 var errorHandler = jasmine.createSpy('errorHandler');
 
                 item.unique = '4aa';
-                item.$save({}, successHandler, errorHandler);
+                item.$save(successHandler, errorHandler);
                 socket.flush();
                 expect(successHandler).not.toHaveBeenCalled();
                 expect(errorHandler).toHaveBeenCalled();
@@ -214,13 +214,13 @@ describe('sailsResource', function() {
                 var successHandler = jasmine.createSpy('successHandler');
                 var errorHandler = jasmine.createSpy('errorHandler');
 
-                item.$save({}, successHandler, errorHandler);
+                item.$save(successHandler, errorHandler);
                 socket.flush();
                 expect(successHandler).toHaveBeenCalled();
                 expect(errorHandler).not.toHaveBeenCalled();
 
                 item.id = 999;
-                item.$save({}, successHandler, errorHandler);
+                item.$save(successHandler, errorHandler);
                 socket.flush();
                 expect(errorHandler).toHaveBeenCalled();
             });
@@ -260,12 +260,12 @@ describe('sailsResource', function() {
                 var successHandler = jasmine.createSpy('successHandler');
                 var errorHandler = jasmine.createSpy('errorHandler');
 
-                item.$delete({}, successHandler, errorHandler);
+                item.$delete(successHandler, errorHandler);
                 socket.flush();
                 expect(successHandler).toHaveBeenCalled();
                 expect(errorHandler).not.toHaveBeenCalled();
 
-                item.$delete({}, successHandler, errorHandler);
+                item.$delete(successHandler, errorHandler);
                 socket.flush();
                 expect(errorHandler).toHaveBeenCalled();
             });
