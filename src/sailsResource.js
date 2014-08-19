@@ -116,7 +116,7 @@ function resourceFactory($rootScope, $window, $log) {
 			}
 			var data = shallowClearAndCopy(transformedData || item, {}); // prevents prototype functions being sent
 
-			var url = '/' + model + (params && params.id ? '/' + params.id : '') + createQueryString(params);
+			var url = '/' + model + (data.id ? '/' + data.id : '') + createQueryString(params);
 			var method = item.id ? 'put' : 'post'; // when Resource has id use PUT, otherwise use POST
 			socket[method](url, data, function (response) {
 				handleResponse(response, action, success, error, function (data) {
