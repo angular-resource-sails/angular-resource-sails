@@ -1,7 +1,7 @@
 app.controller('HomeController', function (sailsResource) {
 	var self = this;
 
-	var simple = sailsResource('Simple');
+	var simple = sailsResource('Simple', null, {verbose: true});
 
 	this.simpleForm = {};
 	load();
