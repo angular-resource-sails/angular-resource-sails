@@ -1,10 +1,10 @@
 {
     "name": "angular-resource-sails",
-    "version": "0.2.7",
+    "version": "0.2.8",
     "main": "./src/sailsResource.js",
     "contributors": [
-        "Joshua Prodahl <jprodahl@gmail.com>",
-        "Jason More <Jason.More@gmail.com>"
+		"Joshua Prodahl <jprodahl@gmail.com> (http://returnnull.com)",
+		"Jason More <jason.more@gmail.com> (http://jasonmore.net)"
     ],
     "ignore": [
         "**/.*",

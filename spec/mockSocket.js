@@ -1,7 +1,7 @@
 angular.module('sailsResource').factory('mockSocket', function() {
 
 	var widgets = [
-		{ id: 1, data: 'abc' },{ id: 2, data: 'def' },{ id: 3, data: 'hij', unique: '4aa' }
+		{id: 1, data: 'abc'},{id: 2, data: 'def'},{id: 3, data: 'hij', unique: '4aa'},{id:'aguid',data:'klm'}
 	];
 	var queue = [];
 	var subscribers = [];
@@ -33,7 +33,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
 					callback(angular.copy(widgets, []));
 				}
 				else { // get
-					var id = /\/[^\/]+\/(\d+)/.exec(url)[1];
+					var id = /\/[^\/]+\/(\w+)/.exec(url)[1];
 					var widget = getWidget(id);
 					if(!widget) {
 						callback({ status: 404, error: 'E_NOTFOUND', summary: 'Widget with id ' + id + ' could not be found'});

@@ -53,8 +53,8 @@ function resourceFactory($rootScope, $window, $log) {
 			}
 
 			if (action.method == 'GET') {
-				var key = action.isArray ? JSON.stringify(params || {}) : +params.id; // cache key is query-string for lists, id for items
-				item = action.isArray ? cache[key] || [] : cache[+params.id] || new Resource({ id: +params.id }); // pull out of cache if available, otherwise create new instance
+				var key = action.isArray ? JSON.stringify(params || {}) : params.id; // cache key is params for lists, id for items
+				item = action.isArray ? cache[key] || [] : cache[params.id] || new Resource({ id: params.id }); // pull out of cache if available, otherwise create new instance
 
 				if (item.$resolved) {
 					return item; // resolved item was found, return without doing a call to server, note: this will always refetch for arrays
@@ -135,39 +135,39 @@ function resourceFactory($rootScope, $window, $log) {
 
 		function socketUpdateResource(message) {
 			forEach(cache, function (cacheItem, key) {
-				if (isInt(key) && key == +message.id) { // an id key
-					copy(message.data, cacheItem);
-				}
-				else {
+				if (isArray(cacheItem)) {
 					forEach(cacheItem, function (item) {
-						if (item.id == +message.id) {
+						if (item.id == message.id) {
 							copy(message.data, item);
 						}
 					});
+				}
+				else if(key == message.id){
+					copy(message.data, cacheItem);
 				}
 			});
 		}
 
 		function socketCreateResource(message) {
-			cache[+message.id] = new Resource(message.data);
+			cache[message.id] = new Resource(message.data);
 			// when a new item is created we have no way of knowing if it belongs in a cached list,
 			// this necessitates doing a server fetch on all known lists
 			// TODO does this make sense?
 			forEach(cache, function (cacheItem, key) {
-				if (!isInt(key)) { // a non id key
+				if (isArray(cacheItem)) {
 					retrieveResource(cacheItem, {}, JSON.parse(key));
 				}
 			});
 		}
 
 		function socketDeleteResource(message) {
-			delete cache[+message.id];
+			delete cache[message.id];
 			// remove this item in all known lists
-			forEach(cache, function (cacheItem, key) {
-				if (!isInt(key)) {
+			forEach(cache, function (cacheItem) {
+				if (isArray(cacheItem)) {
 					var foundIndex = null;
 					forEach(cacheItem, function (item, index) {
-						if (item.id == +message.id) {
+						if (item.id == message.id) {
 							foundIndex = index;
 						}
 					});
@@ -233,13 +233,6 @@ function shallowClearAndCopy(src, dst) {
 	}
 
 	return dst;
-}
-
-/**
- * Test if an input is an integer.
- */
-function isInt(input) {
-	return !isNaN(input) && parseInt(Number(input)) == input;
 }
 
 /**

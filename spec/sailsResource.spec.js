@@ -120,6 +120,13 @@ describe('sailsResource', function() {
 			socket.flush();
 			expect(errorHandler).toHaveBeenCalled();
 		});
+
+		it('should retrieve items with string ids', function() {
+			item = service.get({id:'aguid'});
+			socket.flush();
+			expect(item).toBeDefined();
+			expect(item.data).toEqual('klm');
+		});
 	});
 
 	describe('Resource', function() {
