@@ -54,7 +54,7 @@ function resourceFactory($rootScope, $window, $log) {
 
 			if (action.method == 'GET') {
 				var key = action.isArray ? JSON.stringify(params || {}) : +params.id; // cache key is query-string for lists, id for items
-				var item = action.isArray ? cache[key] || [] : cache[+params.id] || new Resource({ id: +params.id }); // pull out of cache if available, otherwise create new instance
+				item = action.isArray ? cache[key] || [] : cache[+params.id] || new Resource({ id: +params.id }); // pull out of cache if available, otherwise create new instance
 
 				if (item.$resolved) {
 					return item; // resolved item was found, return without doing a call to server, note: this will always refetch for arrays
@@ -227,7 +227,7 @@ function shallowClearAndCopy(src, dst) {
 	});
 
 	for (var key in src) {
-		if (src.hasOwnProperty(key) && !(key.charAt(0) === '$' && key.charAt(1) === '$')) {
+		if (src.hasOwnProperty(key) && key.charAt(0) !== '$') {
 			dst[key] = src[key];
 		}
 	}

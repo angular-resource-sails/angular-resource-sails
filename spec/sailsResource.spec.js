@@ -154,6 +154,7 @@ describe('sailsResource', function() {
 
 				var items = socket.items();
 				expect(items[items.length-1].$save).toBeUndefined();
+				expect(items[items.length-1].$resolved).toBeUndefined();
 			});
 
 			it('should use callbacks for success', function() {
@@ -201,6 +202,7 @@ describe('sailsResource', function() {
 				item.$save();
 				socket.flush();
 				expect(socket.items()[0].$save).toBeUndefined();
+				expect(socket.items()[0].$resolved).toBeUndefined();
 			});
 
 			it('should work with custom methods', function() {
