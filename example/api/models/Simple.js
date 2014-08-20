@@ -15,7 +15,7 @@ module.exports = {
       type: 'string',
       enum: ['one', 'two', 'three']
     },
-    perfectDate: 'datettime',
+    perfectDate: 'datetTime',
     age: 'int',
     answerToEverything: 'float'
   }
