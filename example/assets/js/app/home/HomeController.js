@@ -18,11 +18,11 @@ app.controller('HomeController', function (sailsResource) {
 		load();
 	};
 
-	this.edit = function(simple){
+	this.editSimple = function(simple){
 		simple.$editing = true;
 	};
 
-	this.save = function(simple){
+	this.saveSimple = function(simple){
 		simple.$save();
 		simple.$editing = false;
 	};

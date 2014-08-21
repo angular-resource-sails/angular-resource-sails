@@ -28,7 +28,7 @@
 						<div class="col-md-10">
 							<div class="radio">
 								<label>
-									<input ng-model="home.simpleForm.oneTwoOrThree" type="radio"value="one">
+									<input ng-model="home.simpleForm.oneTwoOrThree" type="radio" value="one">
 									One
 								</label>
 							</div>
@@ -48,6 +48,7 @@
 					</div>
 					<div class="form-group">
 						<label class="col-md-2 control-label">Many Things</label>
+
 						<div class="col-md-10">
 							<select ng-model="home.simpleForm.manyThings" multiple="" class="form-control">
 								<option>1</option>
@@ -59,15 +60,15 @@
 						</div>
 					</div>
 					<!--<div class="form-group">-->
-						<!--<label class="col-md-2 control-label">Perfect Date</label>-->
-						<!--<div class="col-md-10">-->
-							<!--<input ng-model="home.simpleForm.perfectDate" type="datetime-local"/>-->
-						<!--</div>-->
+					<!--<label class="col-md-2 control-label">Perfect Date</label>-->
+					<!--<div class="col-md-10">-->
+					<!--<input ng-model="home.simpleForm.perfectDate" type="datetime-local"/>-->
+					<!--</div>-->
 					<!--</div>-->
 					<div class="form-group">
 						<div class="col-md-10 col-md-offset-2">
 							<button ng-click="home.simpleForm = {}" class="btn btn-default">Cancel</button>
-							<input type="submit" class="btn btn-primary" />
+							<input type="submit" class="btn btn-primary"/>
 						</div>
 					</div>
 				</fieldset>
@@ -81,24 +82,37 @@
 				<th>email</th>
 				<th>1/2/3</th>
 				<th>manyThings</th>
-				<th>perfect date</th>
+				<!--<th>perfect date</th>-->
 				<th>Actions</th>
 			</tr>
 			</thead>
 			<tbody>
-			<tr ng-repeat="simple in home.simpleTypes track by simple.id">
-				<td ng-bind="simple.email"></td>
-				<td ng-bind="simple.oneTwoOrThree"></td>
-				<td ng-bind="simple.manyThings"></td>
-				<td ng-bind="simple.perfectDate"></td>
+			<tr ng-repeat="simple in home.simpleTypes track by simple.id" ng-switch on="simple.$editing">
 				<td>
-					<a ng-click="home.editSimple(simple)" class="btn btn-info">Edit</a>
+					<span ng-switch-default ng-bind="simple.email"></span>
+					<input ng-switch-when="true" ng-model="simple.email" type="text">
+				</td>
+				<td>
+					<span ng-switch-default ng-bind="simple.oneTwoOrThree"></span>
+					<select ng-switch-on="true" ng-model="simple.oneTwoOrThree">
+						<option value="one">one</option>
+						<option value="one">two</option>
+						<option value="one">three</option>
+					</select>
+				</td>
+
+				<td ng-bind="simple.manyThings"></td>
+				<!--<td ng-bind="simple.perfectDate"></td>-->
+				<td>
+					<a ng-switch-default ng-click="home.editSimple(simple)" class="btn btn-info">Edit</a>
+					<a ng-switch-when="true" ng-click="home.saveSimple(simple)" class="btn btn-success">Save</a>
 					<a ng-click="home.deleteSimple(simple)" class="btn btn-warning">Delete</a>
 				</td>
-			</tr>
-			</tbody>
-		</table>
 	</div>
+	</tr>
+	</tbody>
+	</table>
+</div>
 </div>
 <div class="row">
 
