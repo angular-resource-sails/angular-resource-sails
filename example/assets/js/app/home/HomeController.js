@@ -13,6 +13,10 @@ app.controller('HomeController', function (sailsResource) {
 		load();
 	};
 
+    this.cancel = function() {
+        self.simpleForm = new simple();
+    };
+
 	this.deleteSimple = function (simple) {
 		simple.$delete();
 		load();
