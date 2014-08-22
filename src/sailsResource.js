@@ -3,6 +3,7 @@
 var forEach = angular.forEach,
 	extend = angular.extend,
 	copy = angular.copy,
+	isObject = angular.isObject,
 	isArray = angular.isArray,
 	isFunction = angular.isFunction;
 
@@ -138,12 +139,22 @@ function resourceFactory($rootScope, $window, $log) {
 				if (isArray(cacheItem)) {
 					forEach(cacheItem, function (item) {
 						if (item.id == message.id) {
-							copy(message.data, item);
+							if(needsPopulate(message.data, item)) { // go to server for updated data
+								retrieveResource(item, {}, {id: item.id});
+							}
+							else {
+								copy(message.data, item);
+							}
 						}
 					});
 				}
 				else if(key == message.id){
-					copy(message.data, cacheItem);
+					if(needsPopulate(message.data, cacheItem)) { // go to server for updated data
+						retrieveResource(cacheItem, {}, {id: cacheItem.id});
+					}
+					else {
+						copy(message.data, cacheItem);
+					}
 				}
 			});
 		}
@@ -215,6 +226,21 @@ function resourceFactory($rootScope, $window, $log) {
 }
 
 /**
+ * As of Sails 0.10.4 models with associations will not be populated in socket update data. This function detects
+ * this scenario, i.e. the dst[key] (current value) is an object, but the src[key] (updated value) is a number id.
+ * Ideally this function will stop returning true if/when Sails addresses this issue as both dst and src will
+ * have be an object.
+ */
+function needsPopulate(src, dst) {
+	for(var key in src) {
+		if(src.hasOwnProperty(key) && isObject(dst[key]) && !isObject(src[key])) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Create a shallow copy of an object and clear other fields from the destination.
  * Taken from ngResource source.
  * https://code.angularjs.org/1.2.20/angular-resource.js
@@ -222,7 +248,7 @@ function resourceFactory($rootScope, $window, $log) {
 function shallowClearAndCopy(src, dst) {
 	dst = dst || {};
 
-	angular.forEach(dst, function (value, key) {
+	forEach(dst, function (value, key) {
 		delete dst[key];
 	});
 
