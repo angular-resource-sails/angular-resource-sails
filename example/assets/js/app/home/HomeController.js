@@ -3,26 +3,32 @@ app.controller('HomeController', function (sailsResource) {
 
 	var simple = sailsResource('Simple', null, {verbose: true});
 
-	this.simpleForm = {};
+	this.simpleForm = new simple();
+//	this.simpleForm.perfectDate = new Date(2010, 11, 28, 14, 57);
 	load();
 
-	this.addClassicNgResource = function () {
-		var newSimple = new simple(this.simpleForm);
-		newSimple.$save();
-
-		this.simpleForm = {};
-	};
-
-	this.addJproWay = function () {
-		var newSimple = new simple();
-		angular.copy(this.simpleForm, newSimple);
-		newSimple.$save();
+	this.add = function () {
+		self.simpleForm.$save();
+		self.simpleForm = new simple();
 		load();
 	};
 
-	this.deleteSimple = function (simple, index) {
+	this.cancel = function () {
+		self.simpleForm = new simple();
+	};
+
+	this.deleteSimple = function (simple) {
 		simple.$delete();
 		load();
+	};
+
+	this.editSimple = function (simple) {
+		simple.$editing = true;
+	};
+
+	this.saveSimple = function (simple) {
+		simple.$save();
+		simple.$editing = false;
 	};
 
 	function load() {

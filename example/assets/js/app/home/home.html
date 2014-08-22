@@ -11,59 +11,63 @@
 <div class="row">
 	<div class="col-md-6">
 		<div class="well bs-component">
-			<form ng-submit="home.addJproWay()" class="form-horizontal">
+			<form ng-submit="home.add()" class="form-horizontal">
 				<fieldset>
 					<legend>Simple Types</legend>
 					<div class="form-group">
-						<label for="inputEmail" class="col-lg-2 control-label">Email</label>
+						<label for="inputEmail" class="col-md-2 control-label">Email</label>
 
-						<div class="col-lg-10">
+						<div class="col-md-10">
 							<input ng-model="home.simpleForm.email" type="text" class="form-control" id="inputEmail"
 										 placeholder="Email">
 						</div>
 					</div>
 					<div class="form-group">
-						<label class="col-lg-2 control-label">Radios</label>
+						<label class="col-md-2 control-label">One Two Or Three</label>
 
-						<div class="col-lg-10">
+						<div class="col-md-10">
 							<div class="radio">
 								<label>
-									<input type="radio" name="optionsRadios" id="optionsRadios1" value="option1" checked="">
-									Option one is this
+									<input ng-model="home.simpleForm.oneTwoOrThree" type="radio" value="one">
+									One
 								</label>
 							</div>
 							<div class="radio">
 								<label>
-									<input type="radio" name="optionsRadios" id="optionsRadios2" value="option2">
-									Option two can be something else
+									<input ng-model="home.simpleForm.oneTwoOrThree" type="radio" value="two">
+									Two
+								</label>
+							</div>
+							<div class="radio">
+								<label>
+									<input ng-model="home.simpleForm.oneTwoOrThree" type="radio" value="three">
+									Three
 								</label>
 							</div>
 						</div>
 					</div>
 					<div class="form-group">
-						<label for="select" class="col-lg-2 control-label">Selects</label>
+						<label class="col-md-2 control-label">Many Things</label>
 
-						<div class="col-lg-10">
-							<select class="form-control" id="select">
+						<div class="col-md-10">
+							<select ng-model="home.simpleForm.manyThings" multiple="" class="form-control">
 								<option>1</option>
 								<option>2</option>
 								<option>3</option>
 								<option>4</option>
 								<option>5</option>
 							</select>
-							<br>
-							<select multiple="" class="form-control">
-								<option>1</option>
-								<option>2</option>
-								<option>3</option>
-								<option>4</option>
-								<option>5</option>
-							</select>
 						</div>
 					</div>
+					<!--<div class="form-group">-->
+					<!--<label class="col-md-2 control-label">Perfect Date</label>-->
+					<!--<div class="col-md-10">-->
+					<!--<input ng-model="home.simpleForm.perfectDate" type="datetime-local"/>-->
+					<!--</div>-->
+					<!--</div>-->
 					<div class="form-group">
-						<div class="col-lg-10 col-lg-offset-2">
-							<button ng-click="home.simpleForm = {}" class="btn btn-default">Cancel</button>
+						<div class="col-md-10 col-md-offset-2">
+							<button type="button" class="btn btn-default" ng-click="home.cancel()">Cancel</button>
 							<button type="submit" class="btn btn-primary">Submit</button>
 						</div>
 					</div>
@@ -76,20 +80,33 @@
 			<thead>
 			<tr>
 				<th>email</th>
-				<th>Column heading</th>
-				<th>Column heading</th>
-				<th>Column heading</th>
+				<th>1/2/3</th>
+				<th>manyThings</th>
+				<!--<th>perfect date</th>-->
 				<th>Actions</th>
 			</tr>
 			</thead>
 			<tbody>
 			<tr ng-repeat="simple in home.simpleTypes track by simple.id">
-				<td ng-bind="simple.email"></td>
-				<td>Column content</td>
-				<td>Column content</td>
-				<td>Column content</td>
 				<td>
-					<a ng-click="home.deleteSimple(simple, $index)" class="btn btn-warning">Delete</a>
+					<span ng-hide="simple.$editing" ng-bind="simple.email"></span>
+					<input ng-show="simple.$editing" ng-model="simple.email" type="text">
+				</td>
+				<td>
+					<span ng-hide="simple.$editing" ng-bind="simple.oneTwoOrThree"></span>
+					<select ng-show="simple.$editing" ng-model="simple.oneTwoOrThree">
+						<option value="one">one</option>
+						<option value="two">two</option>
+						<option value="three">three</option>
+					</select>
+				</td>
+
+				<td ng-bind="simple.manyThings"></td>
+				<!--<td ng-bind="simple.perfectDate"></td>-->
+				<td>
+					<a ng-hide="simple.$editing" ng-click="home.editSimple(simple)" class="btn btn-info">Edit</a>
+					<a ng-show="simple.$editing" ng-click="home.saveSimple(simple)" class="btn btn-success">Save</a>
+					<a ng-click="home.deleteSimple(simple)" class="btn btn-warning">Delete</a>
 				</td>
 			</tr>
 			</tbody>
