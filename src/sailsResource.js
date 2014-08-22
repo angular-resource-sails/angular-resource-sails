@@ -227,9 +227,9 @@ function resourceFactory($rootScope, $window, $log) {
 
 /**
  * As of Sails 0.10.4 models with associations will not be populated in socket update data. This function detects
- * this scenario, i.e. the dst[key] (current value) is an object, but the src[key] (updated value) is a number id.
+ * this scenario, i.e. the dst[key] (current value) is an object, but the src[key] (updated value) is an id.
  * Ideally this function will stop returning true if/when Sails addresses this issue as both dst and src will
- * have be an object.
+ * contain an object.
  */
 function needsPopulate(src, dst) {
 	for(var key in src) {
