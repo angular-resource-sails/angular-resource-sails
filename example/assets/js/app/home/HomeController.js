@@ -13,20 +13,20 @@ app.controller('HomeController', function (sailsResource) {
 		load();
 	};
 
-    this.cancel = function() {
-        self.simpleForm = new simple();
-    };
+	this.cancel = function () {
+		self.simpleForm = new simple();
+	};
 
 	this.deleteSimple = function (simple) {
 		simple.$delete();
 		load();
 	};
 
-	this.editSimple = function(simple){
+	this.editSimple = function (simple) {
 		simple.$editing = true;
 	};
 
-	this.saveSimple = function(simple){
+	this.saveSimple = function (simple) {
 		simple.$save();
 		simple.$editing = false;
 	};

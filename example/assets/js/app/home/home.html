@@ -87,32 +87,31 @@
 			</tr>
 			</thead>
 			<tbody>
-			<tr ng-repeat="simple in home.simpleTypes track by simple.id" ng-switch on="simple.$editing">
+			<tr ng-repeat="simple in home.simpleTypes track by simple.id">
 				<td>
-					<span ng-switch-default ng-bind="simple.email"></span>
-					<input ng-switch-when="true" ng-model="simple.email" type="text">
+					<span ng-hide="simple.$editing" ng-bind="simple.email"></span>
+					<input ng-show="simple.$editing" ng-model="simple.email" type="text">
 				</td>
 				<td>
-					<span ng-switch-default ng-bind="simple.oneTwoOrThree"></span>
-					<select ng-switch-on="true" ng-model="simple.oneTwoOrThree">
+					<span ng-hide="simple.$editing" ng-bind="simple.oneTwoOrThree"></span>
+					<select ng-show="simple.$editing" ng-model="simple.oneTwoOrThree">
 						<option value="one">one</option>
-						<option value="one">two</option>
-						<option value="one">three</option>
+						<option value="two">two</option>
+						<option value="three">three</option>
 					</select>
 				</td>
 
 				<td ng-bind="simple.manyThings"></td>
 				<!--<td ng-bind="simple.perfectDate"></td>-->
 				<td>
-					<a ng-switch-default ng-click="home.editSimple(simple)" class="btn btn-info">Edit</a>
-					<a ng-switch-when="true" ng-click="home.saveSimple(simple)" class="btn btn-success">Save</a>
+					<a ng-hide="simple.$editing" ng-click="home.editSimple(simple)" class="btn btn-info">Edit</a>
+					<a ng-show="simple.$editing" ng-click="home.saveSimple(simple)" class="btn btn-success">Save</a>
 					<a ng-click="home.deleteSimple(simple)" class="btn btn-warning">Delete</a>
 				</td>
+			</tr>
+			</tbody>
+		</table>
 	</div>
-	</tr>
-	</tbody>
-	</table>
-</div>
 </div>
 <div class="row">
 
