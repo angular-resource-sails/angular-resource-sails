@@ -20,7 +20,8 @@ describe('sailsResource', function() {
 				},
 				{
 					socket: socket,
-					verbose: true
+					verbose: true,
+					prefix: '/api'
 				});
 		});
 	});

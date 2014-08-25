@@ -8,12 +8,14 @@ describe('multiple sailsResources', function() {
 			socket = mockSocket;
 			service1 = sailsResource('widget', null, {
 				socket: socket,
-				verbose: true
+				verbose: true,
+				prefix: 'api'
 			});
 
 			service2 = sailsResource('widget', null, {
 				socket: socket,
-				verbose: true
+				verbose: true,
+				prefix: 'api'
 			});
 		});
 

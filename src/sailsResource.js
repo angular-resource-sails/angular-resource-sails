@@ -40,12 +40,17 @@ function resourceFactory($rootScope, $window, $log) {
 		}
 		var cache = {};
 
+		// Ensure prefix starts with forward slash
+		if(options.prefix && options.prefix.charAt(0) != '/') {
+			options.prefix = '/' + options.prefix;
+		}
+
 		// Resource constructor
 		function Resource(value) {
 			shallowClearAndCopy(value || {}, this);
 		}
 
-		function handleRequest(item, action, params, success, error) {
+		function handleRequest(item, params, action, success, error) {
 
 			if (isFunction(params)) {
 				error = success;
@@ -62,17 +67,18 @@ function resourceFactory($rootScope, $window, $log) {
 				}
 
 				cache[key] = item; // store blank item in cache
-				return retrieveResource(item, action, params, success, error);
+				return retrieveResource(item, params, action, success, error);
 			}
 			else if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
-				createOrUpdateResource(item, action, params, success, error, action);
+				createOrUpdateResource(item, params, action, success, error);
 			}
 			else if (action.method == 'DELETE') { // Delete individual instance of model
-				deleteResource(item, action, params, success, error, action);
+				deleteResource(item, params, action, success, error);
 			}
 		}
 
 		function handleResponse(response, action, success, error, delegate) {
+			action = action || {};
 			$rootScope.$apply(function () {
 				if (response.error && isFunction(error)) {
 					error(response);
@@ -88,8 +94,8 @@ function resourceFactory($rootScope, $window, $log) {
 			});
 		}
 
-		function retrieveResource(item, action, params, success, error) {
-			var url = '/' + model + (params && params.id ? '/' + params.id : '') + createQueryString(params);
+		function retrieveResource(item, params, action, success, error) {
+			var url = options.prefix + '/' + model + (params && params.id ? '/' + params.id : '') + createQueryString(params);
 			socket.get(url, function (response) {
 				handleResponse(response, action, success, error, function (data) {
 					if (isArray(item)) { // empty the list and update with returned data
@@ -109,15 +115,14 @@ function resourceFactory($rootScope, $window, $log) {
 			return item;
 		}
 
-		function createOrUpdateResource(item, action, params, success, error) {
+		function createOrUpdateResource(item, params, action, success, error) {
 			// prep data
 			var transformedData;
 			if (isFunction(action.transformRequest)) {
 				transformedData = JSON.parse(action.transformRequest(item));
 			}
 			var data = shallowClearAndCopy(transformedData || item, {}); // prevents prototype functions being sent
-
-			var url = '/' + model + (data.id ? '/' + data.id : '') + createQueryString(params);
+			var url = options.prefix + '/' + model + (data.id ? '/' + data.id : '') + createQueryString(params);
 			var method = item.id ? 'put' : 'post'; // when Resource has id use PUT, otherwise use POST
 			socket[method](url, data, function (response) {
 				handleResponse(response, action, success, error, function (data) {
@@ -126,8 +131,8 @@ function resourceFactory($rootScope, $window, $log) {
 			});
 		}
 
-		function deleteResource(item, action, params, success, error) {
-			var url = '/' + model + '/' + item.id + createQueryString(params);
+		function deleteResource(item, params, action, success, error) {
+			var url = options.prefix + '/' + model + '/' + item.id + createQueryString(params);
 			socket.delete(url, function (response) {
 				handleResponse(response, action, success, error);
 				// leaves local instance unmodified
@@ -140,7 +145,7 @@ function resourceFactory($rootScope, $window, $log) {
 					forEach(cacheItem, function (item) {
 						if (item.id == message.id) {
 							if(needsPopulate(message.data, item)) { // go to server for updated data
-								retrieveResource(item, {}, {id: item.id});
+								retrieveResource(item, {id: item.id});
 							}
 							else {
 								copy(message.data, item);
@@ -150,7 +155,7 @@ function resourceFactory($rootScope, $window, $log) {
 				}
 				else if(key == message.id){
 					if(needsPopulate(message.data, cacheItem)) { // go to server for updated data
-						retrieveResource(cacheItem, {}, {id: cacheItem.id});
+						retrieveResource(cacheItem, {id: cacheItem.id});
 					}
 					else {
 						copy(message.data, cacheItem);
@@ -166,7 +171,7 @@ function resourceFactory($rootScope, $window, $log) {
 			// TODO does this make sense?
 			forEach(cache, function (cacheItem, key) {
 				if (isArray(cacheItem)) {
-					retrieveResource(cacheItem, {}, JSON.parse(key));
+					retrieveResource(cacheItem, JSON.parse(key));
 				}
 			});
 		}
@@ -197,7 +202,7 @@ function resourceFactory($rootScope, $window, $log) {
 			var actionName = isInstanceMethod ? '$' + name : name;
 
 			addTo[actionName] = function (params, success, error) {
-				return handleRequest(this, action, params, success, error);
+				return handleRequest(this, params, action, success, error);
 			};
 		});
 

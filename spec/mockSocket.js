@@ -29,11 +29,11 @@ angular.module('sailsResource').factory('mockSocket', function() {
 		},
 		get: function(url, callback) {
 			queue.push(function() {
-				if(url.indexOf('/widget/') == -1) { // query
+				if(url.indexOf('/api/widget/') == -1) { // query
 					callback(angular.copy(widgets, []));
 				}
 				else { // get
-					var id = /\/[^\/]+\/(\w+)/.exec(url)[1];
+					var id = /\/api\/widget\/(.+)/.exec(url)[1];
 					var widget = getWidget(id);
 					if(!widget) {
 						callback({ status: 404, error: 'E_NOTFOUND', summary: 'Widget with id ' + id + ' could not be found'});
@@ -90,7 +90,7 @@ angular.module('sailsResource').factory('mockSocket', function() {
 			});
 		},
 		delete: function(url, callback) {
-			var id = /\/[^\/]+\/(\d+)/.exec(url)[1];
+			var id = /\/api\/widget\/(.+)/.exec(url)[1];
 
 			queue.push(function() {
 
