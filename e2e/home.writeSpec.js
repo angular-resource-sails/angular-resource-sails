@@ -1,6 +1,6 @@
 var Homepage = function () {
 	this.get = function () {
-		browser.get('http://localhost:1337');
+		browser.get('/');
 	};
 
 	this.simpleTypes = element.all(by.repeater('simple in home.simpleTypes track by simple.id'));
@@ -16,7 +16,7 @@ var Homepage = function () {
 };
 
 
-describe('homepage', function () {
+describe('homepage write >', function () {
 
 	var home = new Homepage();
 	home.get();

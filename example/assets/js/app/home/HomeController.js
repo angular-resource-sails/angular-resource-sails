@@ -1,7 +1,7 @@
 app.controller('HomeController', function (sailsResource) {
 	var self = this;
 
-	var simple = sailsResource('Simple', null, {verbose: true});
+	var simple = sailsResource('Simple');
 
 	this.simpleForm = new simple();
 //	this.simpleForm.perfectDate = new Date(2010, 11, 28, 14, 57);
