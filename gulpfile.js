@@ -1,39 +1,67 @@
 var gulp = require('gulp');
+var process = require('child_process');
 var protractor = require("gulp-protractor").protractor;
-
-// Start a standalone server
-var webdriver_standalone = require("gulp-protractor").webdriver_standalone;
-
-// Download and update the selenium driver
 var webdriver_update = require("gulp-protractor").webdriver_update;
+var fs = require('fs');
+var path = require('path');
 
-// Downloads the selenium webdriver
+var sailsProcess;
+
+gulp.task('remove-local-sails-db', function (cb) {
+	var dbLocation = path.join('example', '.tmp', 'localDiskDb.db');
+	fs.unlink(dbLocation, function (err) {
+		if (err) {
+			console.log('no database file, no worries');
+		} else {
+			console.log('successfully deleted /tmp/hello');
+		}
+		cb();
+	});
+});
+
+gulp.task('sails-lift', ['remove-local-sails-db'], function (cb) {
+	sailsProcess = process.spawn('sails', ['lift'], {
+		cwd: './example'
+	});
+
+	sailsProcess.stdout.on('data', function (data) {
+		console.log(data.toString());
+
+		// sails lifted, lets go
+		if (data.toString().indexOf('Server lifted') > -1) {
+			cb();
+		}
+	});
+
+	sailsProcess.stderr.on('data', function (data) {
+		console.log('stderr: ' + data);
+	});
+});
+
 gulp.task('webdriver_update', webdriver_update);
 
-// Start the standalone selenium server
-// NOTE: This is not needed if you reference the
-// seleniumServerJar in your protractor.conf.js
-gulp.task('webdriver_standalone', webdriver_standalone);
-
-gulp.task('protractor-read', ['webdriver_update'], function (cb) {
+gulp.task('protractor-read', ['sails-lift', 'webdriver_update'], function (cb) {
 	runProtractor('read', cb);
 });
 
-gulp.task('protractor-write', ['webdriver_update'], function (cb) {
+gulp.task('protractor-write', ['sails-lift', 'webdriver_update'], function (cb) {
 	runProtractor('write', cb);
 });
 
-gulp.task('protractor', ['protractor-read','protractor-write']);
-
-gulp.task('default', function() {
-	// place code for your default task here
+gulp.task('protractor', ['protractor-read', 'protractor-write'], function () {
+	sailsProcess.kill('SIGHUP');
 });
 
-function runProtractor(suite, cb){
-	gulp.src(["./e2e/*.js"]).pipe(protractor({
-		configFile: "protractor.conf.js",
-		args: ['--baseUrl', 'http://localhost:1337', '--suite', suite]
-	})).on('error', function(e) {
-		cb(e);
-	}).on('end', cb);
+gulp.task('default', ['protractor']);
+
+function runProtractor(suite, cb) {
+	gulp.src(["./e2e/*.js"])
+		.pipe(protractor({
+			configFile: "protractor.conf.js",
+			args: ['--baseUrl', 'http://localhost:1337', '--suite', suite]
+		}))
+		.on('error', function (e) {
+			sailsProcess.kill('SIGHUP');
+			throw e;
+		}).on('end', cb);
 }

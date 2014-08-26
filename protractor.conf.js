@@ -1,3 +1,10 @@
+/////////////////////////////
+// Dear end user:
+// if you try to run `protractor`, its not really going to work
+// please use `gulp protractor` to run the protractor tests
+// Thanks! Jason
+/////////////////////////////
+
 exports.config = {
 	chromeOnly: true,
 	specs: ['e2e/**/*.js'],
