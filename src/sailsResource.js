@@ -19,6 +19,20 @@ function resourceFactory($rootScope, $window, $log) {
 		'delete': {method: 'DELETE'}
 	};
 
+	var DEFAULT_OPTIONS = {
+		// Sails lets you set a prefix, such as '/api'
+		prefix: '',
+
+		// When verbose, socket updates go to the console
+		verbose: false,
+
+		// Set a specific websocket, used for testing
+		socket: null,
+
+		// Set a specific origin, used for testing
+		origin: null
+	};
+
 	return function (model, actions, options) {
 
 		if (typeof model != 'string' || model.length == 0) {
@@ -27,6 +41,7 @@ function resourceFactory($rootScope, $window, $log) {
 
 		model = model.toLowerCase(); // sails always sends models lowercase
 		actions = extend({}, DEFAULT_ACTIONS, actions);
+		options = extend({}, DEFAULT_OPTIONS, options);
 
 		var origin, socket;
 		if (typeof options == 'object') {
@@ -34,7 +49,6 @@ function resourceFactory($rootScope, $window, $log) {
 			socket = options.socket || $window.io.connect(origin);
 		}
 		else {
-			options = {};
 			origin = $window.location.origin;
 			socket = $window.io.connect(origin);
 		}
