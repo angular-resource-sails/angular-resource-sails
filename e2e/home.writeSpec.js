@@ -6,6 +6,10 @@ describe('homepage write >', function () {
 	var home = new Homepage();
 	home.get();
 
+//	browser.wait(function(){
+//		return home.headerExists();
+//	},10000);
+
 	it('simple list should be empty', function () {
 		expect(home.simpleTypes.count()).toEqual(0);
 	});

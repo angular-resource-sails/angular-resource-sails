@@ -34,7 +34,7 @@ gulp.task('sails-lift', ['remove-local-sails-db'], function (cb) {
 	});
 
 	sailsProcess.stderr.on('data', function (data) {
-		console.log('stderr: ' + data);
+		console.log('e: ' + data);
 	});
 });
 
@@ -49,7 +49,7 @@ gulp.task('protractor-write', ['sails-lift', 'webdriver_update'], function (cb) 
 });
 
 gulp.task('protractor', ['protractor-read', 'protractor-write'], function () {
-	sailsProcess.kill('SIGHUP');
+	sailsProcess.kill('SIGINT');
 });
 
 gulp.task('default', ['protractor']);
@@ -57,11 +57,11 @@ gulp.task('default', ['protractor']);
 function runProtractor(suite, cb) {
 	gulp.src(["./e2e/*.js"])
 		.pipe(protractor({
-			configFile: "protractor.conf.js",
+			configFile: "protractor-ci.conf.js",
 			args: ['--baseUrl', 'http://localhost:1337', '--suite', suite]
 		}))
 		.on('error', function (e) {
-			sailsProcess.kill('SIGHUP');
-			throw e;
+			sailsProcess.kill('SIGINT');
+			cb(e);
 		}).on('end', cb);
 }
