@@ -22,4 +22,5 @@ describe('homepage write >', function () {
 
 		expect(home.simpleTypes.count()).toEqual(1);
 	});
+
 });

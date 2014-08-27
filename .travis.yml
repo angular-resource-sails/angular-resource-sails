@@ -7,5 +7,6 @@ env:
   - secure: GSFOBMZtTmEUfu5ZwMMwikT0oUw3S6GCglf0Fa5sy8MGxbJKtV1wU+C+I/fYIoS+oNQH6AgkVBsc3NqZTJGYTfQd/ibK6TKekl9Kzc+iLASaR+wa6IUErimx6VF7rD+mFDwtDqaKxowryO+ZfBPt6g5rx3ig03IxmoZzRK6ucSE=
   - secure: Ju67Bqo9eG6Cj4ZIglWLsp3mvYRV0gQY3gEQFLo1UxlKaZXVwMLT1PR/iwZVtWVj/dwDrhaxqlMUCQnkEVMsvms5xi2kZH+xS9jDdwuAkbMbB8EyJrxTxzX4w2kwEqvK+0O6FQGI1z/aR07w6OalbFkUEatMcCs0ZCqjFPnjuW0=
   - secure: Xi/ZJWy2U09mFj9HnETmaK8Fo9xoPzSszwksgOahBJXntrR8qRtU9Lni5hzkqOm/KU1Vd0fEbAOirGCoTBSbmSH3NqJlLl3Tz0nWYsFN+FEp391t5G//GSM8VzRJUilAt9VxyJ/FZLqFYmOxXFmc+7bsIittocLUIIxqeiiwzYE=
+  - ci:true
 addons:
   sauce_connect: true
