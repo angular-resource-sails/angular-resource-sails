@@ -1,6 +1,12 @@
 var Homepage = function () {
+	var self = this;
+
 	this.get = function () {
 		browser.get('/');
+//		browser.wait(function(){
+//			return element.all(by.css('h1')).count();
+//		},10000);
+//		browser.sleep(10000);
 	};
 
 	this.simpleTypes = element.all(by.repeater('simple in home.simpleTypes track by simple.id'));
