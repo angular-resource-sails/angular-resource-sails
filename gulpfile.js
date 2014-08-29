@@ -1,5 +1,5 @@
 var gulp = require('gulp');
-var spawn = require('child_process').spawn;
+var exec = require('exec');
 var protractor = require("gulp-protractor").protractor;
 var webdriver_update = require("gulp-protractor").webdriver_update;
 var fs = require('fs');
@@ -21,8 +21,9 @@ gulp.task('remove-local-sails-db', function (cb) {
 });
 
 gulp.task('sails-lift', ['remove-local-sails-db'], function (cb) {
-	sailsProcess = spawn('sails', ['lift'], {
-		cwd: './example'
+	var execOptions = {cwd: './example'};
+	sailsProcess = exec(['sails', 'lift'], execOptions, function(err, out, code){
+		// ?
 	});
 
 	sailsProcess.stdout.on('data', function (data) {
@@ -59,7 +60,7 @@ function runProtractor(suite, cb) {
 
 	var configFile = "protractor.conf.js";
 
-	if(process.env.ci){
+	if (process.env.ci) {
 		configFile = "protractor-ci.conf.js";
 	}
 
