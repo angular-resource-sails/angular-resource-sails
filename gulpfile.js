@@ -1,5 +1,5 @@
 var gulp = require('gulp');
-var exec = require('exec');
+var spawn = require('child_process').spawn;
 var protractor = require("gulp-protractor").protractor;
 var webdriver_update = require("gulp-protractor").webdriver_update;
 var fs = require('fs');
@@ -21,10 +21,8 @@ gulp.task('remove-local-sails-db', function (cb) {
 });
 
 gulp.task('sails-lift', ['remove-local-sails-db'], function (cb) {
-	var execOptions = {cwd: './example'};
-	sailsProcess = exec(['sails', 'lift'], execOptions, function(err, out, code){
-		// ?
-	});
+	var sails = (process.platform === "win32" ? "sails.cmd" : "sails");
+	sailsProcess = spawn(sails, ['lift'], {cwd: './example'});
 
 	sailsProcess.stdout.on('data', function (data) {
 		console.log(data.toString());
