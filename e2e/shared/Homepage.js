@@ -40,7 +40,7 @@ var Homepage = function () {
 		},
 
 		oneTwoOrThreeLabel:function() {
-			return newSimple().element(by.binding('simple.oneTwoOrThree'));
+			return newSimple().element(by.css('span[ng-bind="simple.oneTwoOrThree"]'));
 		},
 
 		oneTwoOrThreeDropdown:function() {

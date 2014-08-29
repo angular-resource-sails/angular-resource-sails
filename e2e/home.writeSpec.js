@@ -30,6 +30,7 @@ describe('homepage write >', function () {
 		home.simple.save().click();
 
 		// need expect so this test runs and triggers for the readSpec test
-		expect(1).toEqual(1);
+		expect(home.simple.emailLabel().getText()).toEqual('foo@bar.com');
+		expect(home.simple.oneTwoOrThreeLabel().getText()).toEqual('three');
 	});
 });

@@ -20,5 +20,6 @@ describe('homepage read >', function () {
 		});
 
 		expect(home.simple.emailLabel().getText()).toEqual('foo@bar.com');
+		expect(home.simple.oneTwoOrThreeLabel().getText()).toEqual('three');
 	});
 });
