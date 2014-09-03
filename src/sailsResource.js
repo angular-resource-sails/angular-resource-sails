@@ -225,19 +225,24 @@ function resourceFactory($rootScope, $window, $log) {
 			if (options.verbose) {
 				$log.log('sailsResource received \'' + model + '\' message: ', message);
 			}
+			var messageName = null;
 			$rootScope.$apply(function () {
 				switch (message.verb) {
 					case 'updated':
 						socketUpdateResource(message);
+						messageName = '$sailsResourceUpdated';
 						break;
 					case 'created':
 						socketCreateResource(message);
+						messageName = '$sailsResourceCreated';
 						break;
 					case 'destroyed':
 						socketDeleteResource(message);
+						messageName = '$sailsResourceDestroyed';
 						break;
 				}
-			})
+			});
+			$rootScope.$broadcast(messageName, extend({model: model}, message));
 		});
 
 		return Resource;

@@ -7,7 +7,11 @@ angular-resource-sails bridges this gap by allowing you to create service object
 
 Install
 =====================
-Include 'angular-resource-sails' in your bower.json file. At this time we recommend getting the latest version. Alternatively, include the sailsResource.js file in your project.
+Add 'angular-resource-sails' and 'sails.io.js' to your bower.json file. Include both in your page somewhere. Example:
+```
+<script src="/bower_components/sails.io.js/dist/sails.io.js"></script>
+<script src="/bower_components/angular-resource-sails/src/sailsResource.js"></script>
+```
 
 Then, in your Angular application dependencies include 'sailsResource' as one of them.
 
@@ -90,6 +94,15 @@ Realtime updates
 ===============================
 
 All angular-resource-sails instances will be subscribed to socket.io updates. If the client recieves a create, update, or delete message from the server every instance already created will automatically update as needed.
+
+Additionally, angular-resource-sails will $broadcast a $sailsResourceCreated, $sailsResourceUpdated, and $sailsResourceDestroyed messages when those socket messages are received. You can respond in a customized way by subscribing to those events.
+```
+$rootScope.$on('$sailsResourceUpdated', function(event, message) {
+	if(message.model == 'user') {
+		// some logic for user update messages
+	}
+});
+```
 
 Development
 ===============================
