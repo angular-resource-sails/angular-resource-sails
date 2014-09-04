@@ -33,6 +33,12 @@ function resourceFactory($rootScope, $window, $log) {
 		origin: null
 	};
 
+	var MESSAGES = {
+		create: '$sailsResourceCreated',
+		update: '$sailsResourceUpdated',
+		destroy: '$sailsResourceDestroyed'
+	};
+
 	return function (model, actions, options) {
 
 		if (typeof model != 'string' || model.length == 0) {
@@ -43,21 +49,18 @@ function resourceFactory($rootScope, $window, $log) {
 		actions = extend({}, DEFAULT_ACTIONS, actions);
 		options = extend({}, DEFAULT_OPTIONS, options);
 
-		var origin, socket;
-		if (typeof options == 'object') {
-			origin = options.origin || $window.location.origin;
-			socket = options.socket || $window.io.connect(origin);
-		}
-		else {
-			origin = $window.location.origin;
-			socket = $window.io.connect(origin);
-		}
-		var cache = {};
-
 		// Ensure prefix starts with forward slash
 		if(options.prefix && options.prefix.charAt(0) != '/') {
 			options.prefix = '/' + options.prefix;
 		}
+		var origin = options.origin || $window.location.origin;
+		var socket = options.socket || $window.io.connect(origin);
+
+		// Caching
+		var cache = {};
+		$rootScope.$on('$locationChangeSuccess', function() {
+			cache = {}; // Clear cache when routes change
+		});
 
 		// Resource constructor
 		function Resource(value) {
@@ -141,6 +144,7 @@ function resourceFactory($rootScope, $window, $log) {
 			socket[method](url, data, function (response) {
 				handleResponse(response, action, success, error, function (data) {
 					copy(data, item);
+					$rootScope.$broadcast(item.id ? MESSAGES.update : MESSAGES.create, {model: model, id: data.id, data: data});
 				});
 			});
 		}
@@ -148,8 +152,10 @@ function resourceFactory($rootScope, $window, $log) {
 		function deleteResource(item, params, action, success, error) {
 			var url = options.prefix + '/' + model + '/' + item.id + createQueryString(params);
 			socket.delete(url, function (response) {
-				handleResponse(response, action, success, error);
-				// leaves local instance unmodified
+				handleResponse(response, action, success, error, function() {
+					$rootScope.$broadcast(MESSAGES.destroy, {model: model, id: item.id});
+					// leave local instance unmodified
+				});
 			});
 		}
 
@@ -230,15 +236,15 @@ function resourceFactory($rootScope, $window, $log) {
 				switch (message.verb) {
 					case 'updated':
 						socketUpdateResource(message);
-						messageName = '$sailsResourceUpdated';
+						messageName = MESSAGES.update;
 						break;
 					case 'created':
 						socketCreateResource(message);
-						messageName = '$sailsResourceCreated';
+						messageName = MESSAGES.create;
 						break;
 					case 'destroyed':
 						socketDeleteResource(message);
-						messageName = '$sailsResourceDestroyed';
+						messageName = MESSAGES.destroy;
 						break;
 				}
 			});
