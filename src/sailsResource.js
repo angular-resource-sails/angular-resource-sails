@@ -7,9 +7,9 @@ var forEach = angular.forEach,
 	isArray = angular.isArray,
 	isFunction = angular.isFunction;
 
-angular.module('sailsResource', []).factory('sailsResource', ['$rootScope', '$window', '$location', '$log', resourceFactory]);
+angular.module('sailsResource', []).factory('sailsResource', ['$rootScope', '$window', '$log', resourceFactory]);
 
-function resourceFactory($rootScope, $window, $location, $log) {
+function resourceFactory($rootScope, $window, $log) {
 
 	var DEFAULT_ACTIONS = {
 		'get': {method: 'GET'},
@@ -58,16 +58,8 @@ function resourceFactory($rootScope, $window, $location, $log) {
 
 		// Caching
 		var cache = {};
-		$rootScope.$on('$locationChangeSuccess', function(evt, next) {
-			// Retain cached items that were cached on the current path
-			// This avoids releasing resources that are likely to be needed on the current page
-			var kept = {};
-			forEach(cache, function(cacheItem, key) {
-				if(key.indexOf(next) == 0) { // path is first part of key
-					kept[key] = cacheItem;
-				}
-			});
-			shallowClearAndCopy(kept, cache); // clear cache of all but kept items
+		$rootScope.$on('$locationChangeSuccess', function() {
+			cache = {}; // Clear cache when routes change
 		});
 
 		// Resource constructor
@@ -84,14 +76,14 @@ function resourceFactory($rootScope, $window, $location, $log) {
 			}
 
 			if (action.method == 'GET') {
-				var key = $location.absUrl() + '|' + (action.isArray ? JSON.stringify(params || {}) : params.id); // cache key is params for lists, id for items
+				var key = action.isArray ? JSON.stringify(params || {}) : params.id; // cache key is params for lists, id for items
 				item = action.isArray ? cache[key] || [] : cache[params.id] || new Resource({ id: params.id }); // pull out of cache if available, otherwise create new instance
 
 				if (item.$resolved) {
 					return item; // resolved item was found, return without doing a call to server, note: this will always refetch for arrays
 				}
 
-				cache[key] = item; // store item in cache
+				cache[key] = item; // store blank item in cache
 				return retrieveResource(item, params, action, success, error);
 			}
 			else if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
@@ -199,10 +191,7 @@ function resourceFactory($rootScope, $window, $location, $log) {
 			// TODO does this make sense?
 			forEach(cache, function (cacheItem, key) {
 				if (isArray(cacheItem)) {
-					var keyParts = key.split('|'); // JSON to submit on query is second part of key
-					if(keyParts.length == 2) {
-						retrieveResource(cacheItem, JSON.parse(keyParts[1]));
-					}
+					retrieveResource(cacheItem, JSON.parse(key));
 				}
 			});
 		}
