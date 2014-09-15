@@ -41,8 +41,12 @@ describe('multiple sailsResources', function() {
 		var list1, list2, originalCount;
 		beforeEach(function() {
 			list1 = service1.query();
+			console.log('q1');
 			list2 = service2.query();
+			console.log('q2');
+			console.log('before flush');
 			socket.flush();
+			console.log('after flush');
 			originalCount = list1.length;
 		});
 
@@ -55,13 +59,15 @@ describe('multiple sailsResources', function() {
 
 			var newItem = new service1();
 			newItem.$save();
+			console.log('saved');
 
-			expect(list1.length).toEqual(originalCount);
-			expect(list2.length).toEqual(originalCount);
+			expect(list1.length).toEqual(originalCount, 'list1 has correct original count');
+			expect(list2.length).toEqual(originalCount, 'list2 has correct original count');
 
 			socket.flush();
-			expect(list1.length).toEqual(originalCount+1);
-			expect(list2.length).toEqual(originalCount+1);
+			console.log('flushed');
+			expect(list1.length).toEqual(originalCount+1, 'list1 has correct updated count');
+			expect(list2.length).toEqual(originalCount+1, 'list2 has correct updated count');
 		});
 
 		it('should send updated messages asynchronously', function() {
