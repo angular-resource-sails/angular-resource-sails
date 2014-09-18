@@ -1,23 +1,23 @@
 {
-    "name": "angular-resource-sails",
-    "version": "0.4.0",
-    "main": "./src/sailsResource.js",
-    "contributors": [
+	"name": "angular-resource-sails",
+	"version": "0.4.0",
+	"main": "./src/sailsResource.js",
+	"contributors": [
 		"Joshua Prodahl <jprodahl@gmail.com> (http://returnnull.com)",
 		"Jason More <jason.more@gmail.com> (http://jasonmore.net)"
-    ],
-    "ignore": [
-        "**/.*",
-        "bower_components",
-        "spec",
-        "package.json"
-    ],
-    "dependencies": {
-        "angular-unstable": "latest",
-        "jasmine": "latest",
-        "sails.io.js": "latest"
-    },
-    "devDependencies": {
-        "angular-mocks": "latest"
-    }
+	],
+	"ignore": [
+		"**/.*",
+		"bower_components",
+		"spec",
+		"package.json"
+	],
+	"dependencies": {
+		"angular-unstable": "latest",
+		"jasmine": "latest",
+		"sails.io.js": "https://github.com/JasonMore/sails.io.js.git#^0.10.x"
+	},
+	"devDependencies": {
+		"angular-mocks": "latest"
+	}
 }
