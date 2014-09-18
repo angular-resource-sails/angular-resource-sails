@@ -15,7 +15,7 @@
 	"dependencies": {
 		"angular-unstable": "latest",
 		"jasmine": "latest",
-		"sails.io.js": "https://github.com/JasonMore/sails.io.js.git#^0.10.x"
+		"sails.io.js": "https://github.com/JasonMore/sails.io.js.git#18ac774"
 	},
 	"devDependencies": {
 		"angular-mocks": "latest"
