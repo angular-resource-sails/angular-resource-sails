@@ -1,6 +1,10 @@
 angular-resource-sails
 ======================
 
+<a href="https://travis-ci.org/angular-resource-sails/angular-resource-sails">
+	<img src="https://travis-ci.org/angular-resource-sails/angular-resource-sails.svg" title="Build Status Images"/>
+</a>
+
 Sails.js is a realtime MVC framework built for NodeJS. Angular is a front end framework for building client side web applications. One of Angular's features is ngResource, a small service that allows developers to create objects on the client that can be saved and deleted as if they were on the server. It's a fantastic abstraction that eliminates the usual plumping code of making a change on the client, doing an HTTP call, and handling the response. However, it only works with the Angular $http service, which does not operate using socket.io as Sails.js does.
 
 angular-resource-sails bridges this gap by allowing you to create service objects that behave like those from ngResource but do all of their updating through Sails.js socket.io connections. It also sets up the binding necessary for realtime updates to affect the client. 
