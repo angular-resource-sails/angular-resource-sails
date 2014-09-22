@@ -142,7 +142,7 @@ function resourceFactory($rootScope, $window, $log) {
 			socket[method](url, data, function (response) {
 				handleResponse(response, action, success, error, function (data) {
 					copy(data, item);
-					$rootScope.$broadcast(item.id ? MESSAGES.update : MESSAGES.create, {model: model, id: data.id, data: data});
+					$rootScope.$broadcast(method == 'put' ? MESSAGES.update : MESSAGES.create, {model: model, id: data.id, data: data});
 				});
 			});
 		}
@@ -245,8 +245,8 @@ function resourceFactory($rootScope, $window, $log) {
 						messageName = MESSAGES.destroy;
 						break;
 				}
+				$rootScope.$broadcast(messageName, extend({model: model}, message));
 			});
-			$rootScope.$broadcast(messageName, extend({model: model}, message));
 		});
 
 		return Resource;

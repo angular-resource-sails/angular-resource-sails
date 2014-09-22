@@ -1,8 +1,11 @@
-app.controller('HomeController', function (sailsResource) {
+app.controller('HomeController', function ($rootScope, sailsResource) {
 	var self = this;
 
 	var simple = sailsResource('Simple');
 
+	this.created = 0;
+	this.updated = 0;
+	this.destroyed = 0;
 	this.simpleForm = new simple();
 //	this.simpleForm.perfectDate = new Date(2010, 11, 28, 14, 57);
 	load();
@@ -35,4 +38,14 @@ app.controller('HomeController', function (sailsResource) {
 	function load() {
 		self.simpleTypes = simple.query();
 	}
+
+	$rootScope.$on('$sailsResourceCreated', function() {
+		self.created++;
+	});
+	$rootScope.$on('$sailsResourceUpdated', function() {
+		self.updated++;
+	});
+	$rootScope.$on('$sailsResourceDestroyed', function() {
+		self.destroyed++;
+	});
 });

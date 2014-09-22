@@ -22,4 +22,19 @@ describe('homepage read >', function () {
 		expect(home.simple.emailLabel().getText()).toEqual('foo@bar.com');
 		expect(home.simple.oneTwoOrThreeLabel().getText()).toEqual('three');
 	});
+
+	it('sees delete of an item', function() {
+		browser.wait(function() {
+			return home.simpleTypes().count().then(function(itemCount) {
+				return itemCount == 0;
+			});
+		});
+		expect(home.simpleTypes().count()).toEqual(0);
+	});
+
+	it('receives broadcast messages', function() {
+		expect(home.created.getText()).toEqual('1');
+		expect(home.updated.getText()).toEqual('1');
+		expect(home.destroyed.getText()).toEqual('1');
+	});
 });

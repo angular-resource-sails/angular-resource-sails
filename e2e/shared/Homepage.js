@@ -55,8 +55,16 @@ var Homepage = function () {
 
 		save: function(){
 			return newSimple().element(by.css('.btn[ng-click="home.saveSimple(simple)"]'));
+		},
+
+		delete: function() {
+			return newSimple().element(by.css('.btn[ng-click="home.deleteSimple(simple)"]'))
 		}
 	};
+
+	this.created = element(by.binding('created'));
+	this.updated = element(by.binding('updated'));
+	this.destroyed = element(by.binding('destroyed'));
 };
 
 module.exports = exports = Homepage;

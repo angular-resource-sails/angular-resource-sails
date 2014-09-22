@@ -33,4 +33,15 @@ describe('homepage write >', function () {
 		expect(home.simple.emailLabel().getText()).toEqual('foo@bar.com');
 		expect(home.simple.oneTwoOrThreeLabel().getText()).toEqual('three');
 	});
+
+	it('can delete an item', function() {
+		home.simple.delete().click();
+		expect(home.simpleTypes().count()).toEqual(0);
+	});
+
+	it('receives broadcast messages', function() {
+		expect(home.created.getText()).toEqual('1');
+		expect(home.updated.getText()).toEqual('1');
+		expect(home.destroyed.getText()).toEqual('1');
+	});
 });
