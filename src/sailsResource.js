@@ -60,6 +60,24 @@ function resourceFactory($rootScope, $window, $log) {
 		var cache = {};
 		// TODO implement cache clearing?
 
+		function removeFromCache(id) {
+			delete cache[id];
+			// remove this item in all known lists
+			forEach(cache, function (cacheItem) {
+				if (isArray(cacheItem)) {
+					var foundIndex = null;
+					forEach(cacheItem, function (item, index) {
+						if (item.id == id) {
+							foundIndex = index;
+						}
+					});
+					if (foundIndex != null) {
+						cacheItem.splice(foundIndex, 1);
+					}
+				}
+			});
+		}
+
 		// Resource constructor
 		function Resource(value) {
 			shallowClearAndCopy(value || {}, this);
@@ -92,11 +110,11 @@ function resourceFactory($rootScope, $window, $log) {
 			}
 		}
 
-		function handleResponse(response, action, success, error, delegate) {
+		function handleResponse(item, response, action, success, error, delegate) {
 			action = action || {};
 			$rootScope.$apply(function () {
 				if (response.error && isFunction(error)) {
-					error(response);
+					error(item);
 				}
 				else if (response.error) {
 					$log.error(response);
@@ -104,15 +122,16 @@ function resourceFactory($rootScope, $window, $log) {
 				else {
 					if (isFunction(action.transformResponse)) response = action.transformResponse(response);
 					if (isFunction(delegate)) delegate(response);
-					if (isFunction(success)) success(response);
+					if (isFunction(success)) success(item);
 				}
 			});
 		}
 
 		function retrieveResource(item, params, action, success, error) {
+			item.$resolved = false;
 			var url = options.prefix + '/' + model + (params && params.id ? '/' + params.id : '') + createQueryString(params);
 			socket.get(url, function (response) {
-				handleResponse(response, action, success, error, function (data) {
+				handleResponse(item, response, action, success, error, function (data) {
 					if (isArray(item)) { // empty the list and update with returned data
 						while (item.length) item.pop();
 						forEach(data, function (responseItem) {
@@ -123,8 +142,8 @@ function resourceFactory($rootScope, $window, $log) {
 					}
 					else {
 						copy(data, item); // update item
-						item.$resolved = true;
 					}
+					item.$resolved = true;
 				});
 			});
 			return item;
@@ -140,7 +159,7 @@ function resourceFactory($rootScope, $window, $log) {
 			var url = options.prefix + '/' + model + (data.id ? '/' + data.id : '') + createQueryString(params);
 			var method = item.id ? 'put' : 'post'; // when Resource has id use PUT, otherwise use POST
 			socket[method](url, data, function (response) {
-				handleResponse(response, action, success, error, function (data) {
+				handleResponse(item, response, action, success, error, function (data) {
 					copy(data, item);
 					$rootScope.$broadcast(method == 'put' ? MESSAGES.update : MESSAGES.create, {model: model, id: data.id, data: data});
 				});
@@ -150,7 +169,8 @@ function resourceFactory($rootScope, $window, $log) {
 		function deleteResource(item, params, action, success, error) {
 			var url = options.prefix + '/' + model + '/' + item.id + createQueryString(params);
 			socket.delete(url, function (response) {
-				handleResponse(response, action, success, error, function() {
+				handleResponse(item, response, action, success, error, function() {
+					removeFromCache(item.id);
 					$rootScope.$broadcast(MESSAGES.destroy, {model: model, id: item.id});
 					// leave local instance unmodified
 				});
@@ -195,21 +215,7 @@ function resourceFactory($rootScope, $window, $log) {
 		}
 
 		function socketDeleteResource(message) {
-			delete cache[message.id];
-			// remove this item in all known lists
-			forEach(cache, function (cacheItem) {
-				if (isArray(cacheItem)) {
-					var foundIndex = null;
-					forEach(cacheItem, function (item, index) {
-						if (item.id == message.id) {
-							foundIndex = index;
-						}
-					});
-					if (foundIndex != null) {
-						cacheItem.splice(foundIndex, 1);
-					}
-				}
-			});
+			removeFromCache(message.id);
 		}
 
 		// Add each action to the Resource or its prototype
