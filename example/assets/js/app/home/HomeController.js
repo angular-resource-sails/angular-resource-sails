@@ -18,8 +18,9 @@ app.controller('HomeController', function (sailsResource) {
 	};
 
 	this.deleteSimple = function (simple) {
-		simple.$delete();
-		load();
+		simple.$delete(function() {
+			load();
+		});
 	};
 
 	this.editSimple = function (simple) {

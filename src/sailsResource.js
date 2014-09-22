@@ -7,9 +7,9 @@ var forEach = angular.forEach,
 	isArray = angular.isArray,
 	isFunction = angular.isFunction;
 
-angular.module('sailsResource', []).factory('sailsResource', ['$rootScope', '$window', '$location', '$log', resourceFactory]);
+angular.module('sailsResource', []).factory('sailsResource', ['$rootScope', '$window', '$log', resourceFactory]);
 
-function resourceFactory($rootScope, $window, $location, $log) {
+function resourceFactory($rootScope, $window, $log) {
 
 	var DEFAULT_ACTIONS = {
 		'get': {method: 'GET'},
@@ -58,11 +58,7 @@ function resourceFactory($rootScope, $window, $location, $log) {
 
 		// Caching
 		var cache = {};
-		$rootScope.$watch(function() { return $location.path(); }, function() {
-			if($location.path()) {
-				cache = {}; // Clear cache on valid route change
-			}
-		});
+		// TODO implement cache clearing?
 
 		// Resource constructor
 		function Resource(value) {
