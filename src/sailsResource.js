@@ -22,13 +22,10 @@ function resourceFactory($rootScope, $window, $log) {
 	var DEFAULT_OPTIONS = {
 		// Sails lets you set a prefix, such as '/api'
 		prefix: '',
-
 		// When verbose, socket updates go to the console
 		verbose: false,
-
 		// Set a specific websocket, used for testing
 		socket: null,
-
 		// Set a specific origin, used for testing
 		origin: null
 	};
@@ -95,11 +92,7 @@ function resourceFactory($rootScope, $window, $log) {
 				var key = action.isArray ? JSON.stringify(params || {}) : params.id; // cache key is params for lists, id for items
 				item = action.isArray ? cache[key] || [] : cache[params.id] || new Resource({ id: params.id }); // pull out of cache if available, otherwise create new instance
 
-				if (item.$resolved) {
-					return item; // resolved item was found, return without doing a call to server, note: this will always refetch for arrays
-				}
-
-				cache[key] = item; // store blank item in cache
+				cache[key] = item; // store item in cache
 				return retrieveResource(item, params, action, success, error);
 			}
 			else if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
