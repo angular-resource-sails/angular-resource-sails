@@ -16,7 +16,8 @@ describe('sailsResource', function() {
 					'transformRetrieve': { method: 'GET', transformResponse: function(response) {
 						response.data = 'transformed response';
 						return response;
-					}}
+					}},
+                    'nocache': { method: 'GET', isArray: true, cache: false }
 				},
 				{
 					socket: socket,
@@ -185,6 +186,17 @@ describe('sailsResource', function() {
 				expect(successHandler).not.toHaveBeenCalled();
 				expect(errorHandler).toHaveBeenCalled();
 			});
+
+            it('does not cache when cache=false', function() {
+                var items = service.nocache();
+                socket.flush();
+                expect(items).toBeDefined();
+                expect(items.length).toEqual(originalCount);
+
+                item.$save();
+                socket.flush(); // with cache false the list should not be updated
+                expect(items.length).toEqual(originalCount);
+            });
 		});
 
 		describe('updates', function() {

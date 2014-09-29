@@ -10,6 +10,7 @@ describe('homepage read >', function () {
 		});
 
 		expect(home.simpleTypes().count()).toEqual(1);
+        expect(home.currentCount.getText()).toEqual('1');
 	});
 
 	it('sees emailInput update to foo@bar.com', function () {
@@ -21,6 +22,7 @@ describe('homepage read >', function () {
 
 		expect(home.simple.emailLabel().getText()).toEqual('foo@bar.com');
 		expect(home.simple.oneTwoOrThreeLabel().getText()).toEqual('three');
+        expect(home.currentCount.getText()).toEqual('1');
 	});
 
 	it('sees delete of an item', function() {
@@ -30,7 +32,12 @@ describe('homepage read >', function () {
 			});
 		});
 		expect(home.simpleTypes().count()).toEqual(0);
+        expect(home.currentCount.getText()).toEqual('0');
 	});
+
+    it('uncached count does not change', function() {
+        expect(home.startingCount.getText()).toEqual('0');
+    });
 
 	it('receives broadcast messages', function() {
 		expect(home.created.getText()).toEqual('1');

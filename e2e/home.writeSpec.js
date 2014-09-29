@@ -16,6 +16,7 @@ describe('homepage write >', function () {
 		home.simpleForm.submit().click();
 
 		expect(home.simpleTypes().count()).toEqual(1);
+        expect(home.currentCount.getText()).toEqual('1');
 	});
 
 	it('can update new item', function(){
@@ -32,12 +33,18 @@ describe('homepage write >', function () {
 		// need expect so this test runs and triggers for the readSpec test
 		expect(home.simple.emailLabel().getText()).toEqual('foo@bar.com');
 		expect(home.simple.oneTwoOrThreeLabel().getText()).toEqual('three');
+        expect(home.currentCount.getText()).toEqual('1');
 	});
 
 	it('can delete an item', function() {
 		home.simple.delete().click();
 		expect(home.simpleTypes().count()).toEqual(0);
+        expect(home.currentCount.getText()).toEqual('0');
 	});
+
+    it('uncached count does not change', function() {
+        expect(home.startingCount.getText()).toEqual('0');
+    });
 
 	it('receives broadcast messages', function() {
 		expect(home.created.getText()).toEqual('1');

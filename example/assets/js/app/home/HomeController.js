@@ -1,12 +1,15 @@
 app.controller('HomeController', function ($rootScope, sailsResource) {
 	var self = this;
-	var simple = sailsResource('Simple');
+	var simple = sailsResource('Simple', {nocache: {method:'GET', isArray: true, cache: false}});
 
 	this.created = 0;
 	this.updated = 0;
 	this.destroyed = 0;
 	this.simpleForm = new simple();
 	this.simpleTypes = simple.query();
+    simple.nocache(function(startingTypes){
+        self.startingCount = startingTypes.length;
+    });
 
 	this.add = function () {
 		self.simpleForm.$save(function(newItem) {

@@ -22,9 +22,9 @@ var Homepage = function () {
 		}
 	};
 
-  function newSimple() {
+    function newSimple() {
 		return self.simpleTypes().first();
-	}
+    }
 
 	this.simple = {
 		edit: function () {
@@ -62,12 +62,11 @@ var Homepage = function () {
 		}
 	};
 
+    this.startingCount = element(by.binding('startingCount'));
+    this.currentCount = element(by.binding('simpleTypes.length'));
 	this.created = element(by.binding('created'));
 	this.updated = element(by.binding('updated'));
 	this.destroyed = element(by.binding('destroyed'));
 };
 
 module.exports = exports = Homepage;
-
-
-

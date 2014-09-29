@@ -92,7 +92,9 @@ function resourceFactory($rootScope, $window, $log) {
 				var key = action.isArray ? JSON.stringify(params || {}) : params.id; // cache key is params for lists, id for items
 				item = action.isArray ? cache[key] || [] : cache[params.id] || new Resource({ id: params.id }); // pull out of cache if available, otherwise create new instance
 
-				cache[key] = item; // store item in cache
+                if(action.cache) {
+                    cache[key] = item; // store item in cache
+                }
 				return retrieveResource(item, params, action, success, error);
 			}
 			else if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
@@ -213,6 +215,8 @@ function resourceFactory($rootScope, $window, $log) {
 
 		// Add each action to the Resource or its prototype
 		forEach(actions, function (action, name) {
+            // fill in default action options
+            action = extend({}, {cache: true, isArray: false}, action);
 			// instance methods added to prototype with $ prefix
 			var isInstanceMethod = /^(POST|PUT|PATCH|DELETE)$/i.test(action.method);
 			var addTo = isInstanceMethod ? Resource.prototype : Resource;
