@@ -9,6 +9,12 @@ describe('homepage write >', function () {
 		expect(home.simpleTypes().count()).toEqual(0);
 	});
 
+	it('does not find nonexistent items', function() {
+		home.simpleForm.searchInput().sendKeys('Jason.More@gmail.com');
+		home.simpleForm.searchSubmit().click();
+		expect(home.simpleForm.found().getText()).toEqual('');
+	});
+
 	it('can add new simple type', function () {
 		home.simpleForm.emailInput().sendKeys('Jason.More@gmail.com');
 		home.simpleForm.twoRadio().click();
@@ -17,6 +23,12 @@ describe('homepage write >', function () {
 
 		expect(home.simpleTypes().count()).toEqual(1);
         expect(home.currentCount.getText()).toEqual('1');
+	});
+
+	it('can find existing items', function() {
+		home.simpleForm.searchInput().sendKeys('Jason.More@gmail.com');
+		home.simpleForm.searchSubmit().click();
+		expect(home.simpleForm.found().getText()).toContain('Jason.More@gmail.com');
 	});
 
 	it('can update new item', function(){

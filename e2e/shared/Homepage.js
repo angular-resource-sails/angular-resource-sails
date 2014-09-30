@@ -9,16 +9,25 @@ var Homepage = function () {
 
 	this.simpleForm = {
 		emailInput: function () {
-			return element(by.model('home.simpleForm.email'))
+			return element(by.model('home.simpleForm.email'));
 		},
 		twoRadio: function () {
-			return element.all(by.model('home.simpleForm.oneTwoOrThree')).get(1)
+			return element.all(by.model('home.simpleForm.oneTwoOrThree')).get(1);
 		},
 		manyThingsTwo: function () {
-			return element(by.model('home.simpleForm.manyThings'))
+			return element(by.model('home.simpleForm.manyThings'));
 		},
 		submit: function () {
-			return element(by.css('button[type=submit]'))
+			return element(by.css('button[type=submit]'));
+		},
+		searchInput: function() {
+			return element(by.model('home.searchEmail'));
+		},
+		searchSubmit: function() {
+			return element(by.css('.btn[ng-click="home.findByEmail()"]'));
+		},
+		found: function() {
+			return element(by.id('foundSimple'));
 		}
 	};
 

@@ -1,6 +1,6 @@
 {
 	"name": "angular-resource-sails",
-	"version": "0.5.2",
+	"version": "0.5.3",
 	"main": "./src/sailsResource.js",
 	"contributors": [
 		"Joshua Prodahl <jprodahl@gmail.com> (http://returnnull.com)",

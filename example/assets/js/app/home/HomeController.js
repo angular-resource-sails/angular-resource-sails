@@ -30,6 +30,10 @@ app.controller('HomeController', function ($rootScope, sailsResource) {
 		simple.$save();
 		simple.$editing = false;
 	};
+	this.findByEmail = function() {
+		self.foundSimple = simple.get({email: self.searchEmail});
+		self.searchEmail = '';
+	};
 
 	$rootScope.$on('$sailsResourceCreated', function() {
 		self.created++;

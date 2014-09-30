@@ -108,13 +108,20 @@ function resourceFactory($rootScope, $window, $log) {
 		function handleResponse(item, response, action, success, error, delegate) {
 			action = action || {};
 			$rootScope.$apply(function () {
-				if (response.error && isFunction(error)) {
-					error(item);
-				}
-				else if (response.error) {
+				if (response.error) {
 					$log.error(response);
+					if(isFunction(error)) error(item);
+				}
+				else if(!isArray(item) && isArray(response) && response.length != 1) {
+					// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
+					// item is not an array, only one item should be found or an error is thrown.
+					var errorMessage = (response.length ? 'Multiple' : 'No') +
+						' items found while performing GET on a singular Resource; did you mean to do a query?';
+					$log.error(errorMessage);
+					if (isFunction(error)) error(errorMessage);
 				}
 				else {
+					if (!isArray(item) && isArray(response)) response = response[0]; // converting single array to single item
 					if (isFunction(action.transformResponse)) response = action.transformResponse(response);
 					if (isFunction(delegate)) delegate(response);
 					if (isFunction(success)) success(item);
