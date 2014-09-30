@@ -19,7 +19,12 @@ module.exports = function(grunt) {
 				cwd: './assets',
 				src: ['**/*.!(coffee)'],
 				dest: '.tmp/public'
-			}]
+			},
+      {
+        cwd: '../src',
+        src: ['**/*.!(coffee)'],
+        dest: '.tmp/public/js/dependencies'
+      }]
 		}
 	});
 
