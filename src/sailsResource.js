@@ -47,7 +47,7 @@ function resourceFactory($rootScope, $window, $log) {
 		options = extend({}, DEFAULT_OPTIONS, options);
 
 		// Ensure prefix starts with forward slash
-		if(options.prefix && options.prefix.charAt(0) != '/') {
+		if (options.prefix && options.prefix.charAt(0) != '/') {
 			options.prefix = '/' + options.prefix;
 		}
 		var origin = options.origin || $window.location.origin;
@@ -92,9 +92,9 @@ function resourceFactory($rootScope, $window, $log) {
 				var key = action.isArray ? JSON.stringify(params || {}) : params.id; // cache key is params for lists, id for items
 				item = action.isArray ? cache[key] || [] : cache[params.id] || new Resource({ id: params.id }); // pull out of cache if available, otherwise create new instance
 
-                if(action.cache) {
-                    cache[key] = item; // store item in cache
-                }
+				if (action.cache) {
+					cache[key] = item; // store item in cache
+				}
 				return retrieveResource(item, params, action, success, error);
 			}
 			else if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
@@ -110,9 +110,9 @@ function resourceFactory($rootScope, $window, $log) {
 			$rootScope.$apply(function () {
 				if (response.error) {
 					$log.error(response);
-					if(isFunction(error)) error(item);
+					if (isFunction(error)) error(item);
 				}
-				else if(!isArray(item) && isArray(response) && response.length != 1) {
+				else if (!isArray(item) && isArray(response) && response.length != 1) {
 					// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
 					// item is not an array, only one item should be found or an error is thrown.
 					var errorMessage = (response.length ? 'Multiple' : 'No') +
@@ -171,7 +171,7 @@ function resourceFactory($rootScope, $window, $log) {
 		function deleteResource(item, params, action, success, error) {
 			var url = options.prefix + '/' + model + '/' + item.id + createQueryString(params);
 			socket.delete(url, function (response) {
-				handleResponse(item, response, action, success, error, function() {
+				handleResponse(item, response, action, success, error, function () {
 					removeFromCache(item.id);
 					$rootScope.$broadcast(MESSAGES.destroy, {model: model, id: item.id});
 					// leave local instance unmodified
@@ -184,7 +184,7 @@ function resourceFactory($rootScope, $window, $log) {
 				if (isArray(cacheItem)) {
 					forEach(cacheItem, function (item) {
 						if (item.id == message.id) {
-							if(needsPopulate(message.data, item)) { // go to server for updated data
+							if (needsPopulate(message.data, item)) { // go to server for updated data
 								retrieveResource(item, {id: item.id});
 							}
 							else {
@@ -193,8 +193,8 @@ function resourceFactory($rootScope, $window, $log) {
 						}
 					});
 				}
-				else if(key == message.id){
-					if(needsPopulate(message.data, cacheItem)) { // go to server for updated data
+				else if (key == message.id) {
+					if (needsPopulate(message.data, cacheItem)) { // go to server for updated data
 						retrieveResource(cacheItem, {id: cacheItem.id});
 					}
 					else {
@@ -222,8 +222,8 @@ function resourceFactory($rootScope, $window, $log) {
 
 		// Add each action to the Resource or its prototype
 		forEach(actions, function (action, name) {
-            // fill in default action options
-            action = extend({}, {cache: true, isArray: false}, action);
+			// fill in default action options
+			action = extend({}, {cache: true, isArray: false}, action);
 			// instance methods added to prototype with $ prefix
 			var isInstanceMethod = /^(POST|PUT|PATCH|DELETE)$/i.test(action.method);
 			var addTo = isInstanceMethod ? Resource.prototype : Resource;
@@ -270,8 +270,8 @@ function resourceFactory($rootScope, $window, $log) {
  * contain an object.
  */
 function needsPopulate(src, dst) {
-	for(var key in src) {
-		if(src.hasOwnProperty(key) && isObject(dst[key]) && !isObject(src[key])) {
+	for (var key in src) {
+		if (src.hasOwnProperty(key) && isObject(dst[key]) && !isObject(src[key])) {
 			return true;
 		}
 	}
@@ -284,7 +284,7 @@ function needsPopulate(src, dst) {
  * https://code.angularjs.org/1.2.20/angular-resource.js
  */
 function shallowClearAndCopy(src, dst) {
-	dst = dst || {};
+	dst = dst || (isArray(src) ? [] : {});
 
 	forEach(dst, function (value, key) {
 		delete dst[key];
@@ -292,7 +292,8 @@ function shallowClearAndCopy(src, dst) {
 
 	for (var key in src) {
 		if (src.hasOwnProperty(key) && key.charAt(0) !== '$') {
-			dst[key] = src[key];
+			var prop = src[key];
+			dst[key] = isObject(prop) ? shallowClearAndCopy(prop) : prop;
 		}
 	}
 
