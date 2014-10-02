@@ -31,9 +31,10 @@ function resourceFactory($rootScope, $window, $log) {
 	};
 
 	var MESSAGES = {
-		create: '$sailsResourceCreated',
-		update: '$sailsResourceUpdated',
-		destroy: '$sailsResourceDestroyed'
+		created: '$sailsResourceCreated',
+		updated: '$sailsResourceUpdated',
+		destroyed: '$sailsResourceDestroyed',
+		messaged: '$sailsResourceMessaged'
 	};
 
 	return function (model, actions, options) {
@@ -163,7 +164,7 @@ function resourceFactory($rootScope, $window, $log) {
 			socket[method](url, data, function (response) {
 				handleResponse(item, response, action, success, error, function (data) {
 					copy(data, item);
-					$rootScope.$broadcast(method == 'put' ? MESSAGES.update : MESSAGES.create, {model: model, id: data.id, data: data});
+					$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, {model: model, id: data.id, data: data});
 				});
 			});
 		}
@@ -173,7 +174,7 @@ function resourceFactory($rootScope, $window, $log) {
 			socket.delete(url, function (response) {
 				handleResponse(item, response, action, success, error, function () {
 					removeFromCache(item.id);
-					$rootScope.$broadcast(MESSAGES.destroy, {model: model, id: item.id});
+					$rootScope.$broadcast(MESSAGES.destroyed, {model: model, id: item.id});
 					// leave local instance unmodified
 				});
 			});
@@ -244,15 +245,18 @@ function resourceFactory($rootScope, $window, $log) {
 				switch (message.verb) {
 					case 'updated':
 						socketUpdateResource(message);
-						messageName = MESSAGES.update;
+						messageName = MESSAGES.updated;
 						break;
 					case 'created':
 						socketCreateResource(message);
-						messageName = MESSAGES.create;
+						messageName = MESSAGES.created;
 						break;
 					case 'destroyed':
 						socketDeleteResource(message);
-						messageName = MESSAGES.destroy;
+						messageName = MESSAGES.destroyed;
+						break;
+					case 'messaged':
+						messageName = MESSAGES.messaged;
 						break;
 				}
 				$rootScope.$broadcast(messageName, extend({model: model}, message));
