@@ -1,11 +1,18 @@
 describe('sailsResource', function() {
-
+	beforeEach(module('sailsResource'));
 	var service, socket;
 
+	beforeEach(inject(function (mockSocket, $window) {
+		socket = mockSocket;
+		$window.io = {
+			connect: function () {
+				return mockSocket;
+			}
+		};
+	}));
+
 	beforeEach(function() {
-		module('sailsResource');
-		inject(function(sailsResource, mockSocket) {
-			socket = mockSocket;
+		inject(function(sailsResource) {
 			service = sailsResource('widget',
 				{
 					'update': { method: 'PUT' },
@@ -17,10 +24,9 @@ describe('sailsResource', function() {
 						response.data = 'transformed response';
 						return response;
 					}},
-                    'nocache': { method: 'GET', isArray: true, cache: false }
+					'nocache': { method: 'GET', isArray: true, cache: false }
 				},
 				{
-					socket: socket,
 					verbose: true,
 					prefix: '/api'
 				});

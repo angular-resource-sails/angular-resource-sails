@@ -31,11 +31,42 @@ function resourceFactory($rootScope, $window, $log) {
 	};
 
 	var MESSAGES = {
+		// resource
 		created: '$sailsResourceCreated',
 		updated: '$sailsResourceUpdated',
 		destroyed: '$sailsResourceDestroyed',
-		messaged: '$sailsResourceMessaged'
+		messaged: '$sailsResourceMessaged',
+
+		//socket
+		connected: '$sailsConnected',
+		disconnected: '$sailsDisconnected',
+		reconnected: '$sailsReconnected',
+		reconnecting: '$sailsReconnecting',
+		socketError: '$sailsSocketError'
 	};
+
+	var origin = $window.location.origin;
+	var socket = $window.io.connect(origin);
+
+	socket.on('connect', function () {
+		$rootScope.$broadcast(MESSAGES.connected);
+	});
+
+	socket.on('disconnect', function () {
+		$rootScope.$broadcast(MESSAGES.disconnected);
+	});
+
+	socket.on('reconnect', function () {
+		$rootScope.$broadcast(MESSAGES.reconnected);
+	});
+
+	socket.on('reconnecting', function () {
+		$rootScope.$broadcast(MESSAGES.reconnecting);
+	});
+
+	socket.on('error', function () {
+		$rootScope.$broadcast(MESSAGES.socketError);
+	});
 
 	return function (model, actions, options) {
 
@@ -51,8 +82,6 @@ function resourceFactory($rootScope, $window, $log) {
 		if (options.prefix && options.prefix.charAt(0) != '/') {
 			options.prefix = '/' + options.prefix;
 		}
-		var origin = options.origin || $window.location.origin;
-		var socket = options.socket || $window.io.connect(origin);
 
 		// Caching
 		var cache = {};
@@ -231,6 +260,16 @@ function resourceFactory($rootScope, $window, $log) {
 			var actionName = isInstanceMethod ? '$' + name : name;
 
 			addTo[actionName] = function (params, success, error) {
+				var self = this;
+				if(action.fetchAfterReconnect){
+					// let angular-resource-sails refetch important data after
+					// a server disconnect then reconnect happens
+					socket.on('reconnect', function () {
+						$rootScope.$broadcast()
+						handleRequest(self, params, action, success, error);
+					});
+				}
+
 				return handleRequest(this, params, action, success, error);
 			};
 		});

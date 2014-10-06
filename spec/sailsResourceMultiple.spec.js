@@ -1,11 +1,19 @@
 describe('multiple sailsResources', function() {
-
+	beforeEach(module('sailsResource'));
 	var service1, service2, socket;
 
+	beforeEach(inject(function (mockSocket, $window) {
+		socket = mockSocket;
+
+		$window.io = {
+			connect: function () {
+				return mockSocket;
+			}
+		};
+	}));
+
 	beforeEach(function() {
-		module('sailsResource');
-		inject(function(sailsResource, mockSocket) {
-			socket = mockSocket;
+		inject(function(sailsResource) {
 			service1 = sailsResource('widget', null, {
 				socket: socket,
 				verbose: true,
