@@ -7,9 +7,9 @@
 		isArray = angular.isArray,
 		isFunction = angular.isFunction;
 
-	angular.module('sailsResource', []).factory('sailsResource', ['$rootScope', '$window', '$log', resourceFactory]);
+	angular.module('sailsResource', []).factory('sailsResource', ['$rootScope', '$window', '$log', '$q', resourceFactory]);
 
-	function resourceFactory($rootScope, $window, $log) {
+	function resourceFactory($rootScope, $window, $log, $q) {
 
 		var DEFAULT_ACTIONS = {
 			'get': {method: 'GET'},
@@ -124,7 +124,6 @@
 			}
 
 			function handleRequest(item, params, action, success, error) {
-
 				if (isFunction(params)) {
 					error = success;
 					success = params;
@@ -132,12 +131,17 @@
 				}
 
 				if (action.method == 'GET') {
-					var key = action.isArray ? JSON.stringify(params || {}) : params.id; // cache key is params for lists, id for items
-					item = action.isArray ? cache[key] || [] : cache[params.id] || new Resource({id: params.id}); // pull out of cache if available, otherwise create new instance
+
+					// cache key is params for lists, id for items
+					var key = action.isArray ? JSON.stringify(params || {}) : params.id;
+
+					// pull out of cache if available, otherwise create new instance
+					item = action.isArray ? cache[key] || [] : cache[params.id] || new Resource({id: params.id});
 
 					if (action.cache) {
 						cache[key] = item; // store item in cache
 					}
+
 					return retrieveResource(item, params, action, success, error);
 				}
 				else if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
@@ -148,35 +152,49 @@
 				}
 			}
 
-			function handleResponse(item, response, action, success, error, delegate) {
+			function handleResponse(item, response, action, deferred, delegate) {
 				action = action || {};
 				$rootScope.$apply(function () {
+					item.$resolved = true;
+
 					if (response.error) {
 						$log.error(response);
-						if (isFunction(error)) error(item);
+						deferred.reject(response.error, item, response);
 					}
 					else if (!isArray(item) && isArray(response) && response.length != 1) {
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
 						// item is not an array, only one item should be found or an error is thrown.
 						var errorMessage = (response.length ? 'Multiple' : 'No') +
 							' items found while performing GET on a singular Resource; did you mean to do a query?';
+
 						$log.error(errorMessage);
-						if (isFunction(error)) error(errorMessage);
+						deferred.reject(errorMessage, item, response);
 					}
 					else {
-						if (!isArray(item) && isArray(response)) response = response[0]; // converting single array to single item
+						// converting single array to single item
+						if (!isArray(item) && isArray(response)) response = response[0];
+
 						if (isFunction(action.transformResponse)) response = action.transformResponse(response);
 						if (isFunction(delegate)) delegate(response);
-						if (isFunction(success)) success(item);
+						deferred.resolve(item, response);
 					}
 				});
 			}
 
-			function retrieveResource(item, params, action, success, error) {
+			function attachPromise(item, success, error) {
+				var deferred = $q.defer();
+				item.$promise = deferred.promise;
+				item.$promise.then(success);
+				item.$promise.catch(error);
 				item.$resolved = false;
+				return deferred;
+			}
+
+			function retrieveResource(item, params, action, success, error) {
+				var deferred = attachPromise(item, success, error);
 				var url = options.prefix + '/' + model + (params && params.id ? '/' + params.id : '') + createQueryString(params);
 				socket.get(url, function (response) {
-					handleResponse(item, response, action, success, error, function (data) {
+					handleResponse(item, response, action, deferred, function (data) {
 						if (isArray(item)) { // empty the list and update with returned data
 							while (item.length) item.pop();
 							forEach(data, function (responseItem) {
@@ -188,23 +206,30 @@
 						else {
 							copy(data, item); // update item
 						}
-						item.$resolved = true;
 					});
 				});
 				return item;
 			}
 
 			function createOrUpdateResource(item, params, action, success, error) {
+				var deferred = attachPromise(item, success, error);
+
 				// prep data
 				var transformedData;
 				if (isFunction(action.transformRequest)) {
 					transformedData = JSON.parse(action.transformRequest(item));
 				}
-				var data = shallowClearAndCopy(transformedData || item, {}); // prevents prototype functions being sent
+
+				// prevents prototype functions being sent
+				var data = shallowClearAndCopy(transformedData || item, {});
+
 				var url = options.prefix + '/' + model + (data.id ? '/' + data.id : '') + createQueryString(params);
-				var method = item.id ? 'put' : 'post'; // when Resource has id use PUT, otherwise use POST
+
+				// when Resource has id use PUT, otherwise use POST
+				var method = item.id ? 'put' : 'post';
+
 				socket[method](url, data, function (response) {
-					handleResponse(item, response, action, success, error, function (data) {
+					handleResponse(item, response, action, deferred, function (data) {
 						copy(data, item);
 						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, {
 							model: model,
@@ -216,9 +241,11 @@
 			}
 
 			function deleteResource(item, params, action, success, error) {
+				var deferred = attachPromise(item, success, error);
+
 				var url = options.prefix + '/' + model + '/' + item.id + createQueryString(params);
 				socket.delete(url, function (response) {
-					handleResponse(item, response, action, success, error, function () {
+					handleResponse(item, response, action, deferred, function () {
 						removeFromCache(item.id);
 						$rootScope.$broadcast(MESSAGES.destroyed, {model: model, id: item.id});
 						// leave local instance unmodified
@@ -282,7 +309,7 @@
 						// let angular-resource-sails refetch important data after
 						// a server disconnect then reconnect happens
 						socket.on('reconnect', function () {
-							$rootScope.$broadcast()
+							$rootScope.$broadcast();
 							handleRequest(self, params, action, success, error);
 						});
 					}

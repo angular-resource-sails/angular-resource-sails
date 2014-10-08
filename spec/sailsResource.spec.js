@@ -1,6 +1,7 @@
-describe('sailsResource', function() {
+describe('sailsResource >', function () {
 	beforeEach(module('sailsResource'));
 	var service, socket;
+	var item, successHandler, errorHandler, successPromise, errorPromise;
 
 	beforeEach(inject(function (mockSocket, $window) {
 		socket = mockSocket;
@@ -11,181 +12,218 @@ describe('sailsResource', function() {
 		};
 	}));
 
-	beforeEach(function() {
-		inject(function(sailsResource) {
-			service = sailsResource('widget',
-				{
-					'update': { method: 'PUT' },
-					'transformUpdate': { method: 'PUT', transformRequest: function(request) {
-						request.data = 'transformed request';
-						return JSON.stringify(request);
-					}},
-					'transformRetrieve': { method: 'GET', transformResponse: function(response) {
-						response.data = 'transformed response';
-						return response;
-					}},
-					'nocache': { method: 'GET', isArray: true, cache: false }
-				},
-				{
-					verbose: true,
-					prefix: '/api'
-				});
-		});
-	});
+	beforeEach(inject(function (sailsResource) {
+		successHandler = jasmine.createSpy('successHandler');
+		errorHandler = jasmine.createSpy('errorHandler');
+		successPromise = jasmine.createSpy('successPromise');
+		errorPromise = jasmine.createSpy('errorPromise');
 
-	afterEach(function() {
-		socket.flush();
-	});
+		var actions = {
+			'update': {method: 'PUT'},
+			'transformUpdate': {
+				method: 'PUT', transformRequest: function (request) {
+					request.data = 'transformed request';
+					return JSON.stringify(request);
+				}
+			},
+			'transformRetrieve': {
+				method: 'GET', transformResponse: function (response) {
+					response.data = 'transformed response';
+					return response;
+				}
+			},
+			'nocache': {method: 'GET', isArray: true, cache: false}
+		};
 
-	it('requires a model name', inject(function(sailsResource) {
+		var options = {
+			verbose: true,
+			prefix: '/api'
+		};
+
+		service = sailsResource('widget', actions, options)
+	}));
+
+	it('requires a model name', inject(function (sailsResource) {
 		// invalid
-		expect(function() {
+		expect(function () {
 			sailsResource();
 		}).toThrow();
-		expect(function() {
+
+		expect(function () {
 			sailsResource('');
 		}).toThrow();
 
 		// valid inputs
-		expect(function() {
+		expect(function () {
 			sailsResource('widget');
 		}).not.toThrow();
 	}));
 
-	it('should use a given transformRequest', function() {
-		var item = service.get({id: 1});
-		socket.flush();
-		item.$transformUpdate();
-		expect(item.data).toBeDefined();
-		expect(item.data).toEqual('transformed request');
-	});
-
-	it('should use a given transformResponse', function() {
-		var item = service.transformRetrieve({id: 1});
-		socket.flush();
-		expect(item.data).toBeDefined();
-		expect(item.data).toEqual('transformed response');
-	});
-
-	describe('queries', function() {
-
-		var items;
-		beforeEach(function() {
-			items = service.query();
+	describe('transforms >', function () {
+		it('uses a given transformRequest', function () {
+			var item = service.get({id: 1});
+			socket.flush();
+			item.$transformUpdate();
+			expect(item.data).toBeDefined();
+			expect(item.data).toEqual('transformed request');
 		});
 
-		it('should return an empty array of Resources immediately', function() {
+		it('uses a given transformResponse', function () {
+			var item = service.transformRetrieve({id: 1});
+			socket.flush();
+			expect(item.data).toBeDefined();
+			expect(item.data).toEqual('transformed response');
+		});
+	});
+
+	describe('queries >', function () {
+		var items;
+		beforeEach(function () {
+			items = service.query(successHandler, errorHandler);
+		});
+
+		it('returns an empty array of Resources immediately', function () {
 			expect(items).toBeDefined();
 			expect(items.length).toEqual(0);
 		});
 
-		it('should update to a populated Resource array asynchronously', function() {
-			socket.flush();
-			expect(items.length).toEqual(socket.itemCount());
+		it('has $promise', function () {
+			expect(items.$promise).toBeDefined();
 		});
 
-		it('should use callbacks for success', function() {
-			var successHandler = jasmine.createSpy('successHandler');
-			var errorHandler = jasmine.createSpy('errorHandler');
+		describe('data returned >', function () {
+			beforeEach(function () {
+				socket.flush();
+			});
 
-			items = service.query(successHandler, errorHandler);
+			it('updates to a populated Resource array asynchronously', function () {
+				expect(items.length).toEqual(socket.itemCount());
+			});
+
+			it('used callbacks', function () {
+				expect(successHandler).toHaveBeenCalled();
+				expect(errorHandler).not.toHaveBeenCalled();
+			});
+		});
+
+		it('query works without callbacks', function () {
+			items = service.query();
 			socket.flush();
-			expect(successHandler).toHaveBeenCalled();
-			expect(errorHandler).not.toHaveBeenCalled();
-
-			// is there ever an error scenario for queries?
 		});
 	});
 
-	describe('gets', function() {
+	describe('gets >', function () {
+		describe('successfully >', function () {
+			beforeEach(function () {
+				item = service.get({id: 1}, successHandler, errorHandler);
+				item.$promise.then(successPromise, errorPromise);
+			});
 
-		var item;
-		beforeEach(function() {
-			item = service.get({id:1});
+			it('returns an empty Resource immediately', function () {
+				expect(item).toBeDefined();
+				expect(item.data).toBeUndefined();
+			});
+
+			it('has a $promise', function () {
+				expect(item.$promise).toBeDefined();
+			});
+
+			describe('data returned >', function () {
+				beforeEach(function () {
+					socket.flush();
+				});
+
+				it('updates to a populated Resource asynchronously', function () {
+					expect(item.id).toEqual(1);
+					expect(item.data).toEqual('abc');
+				});
+
+				it('calls successHandler', function () {
+					expect(successHandler).toHaveBeenCalled();
+					expect(errorHandler).not.toHaveBeenCalled();
+				});
+
+				it('calls successPromise', function () {
+					expect(successPromise).toHaveBeenCalled();
+					expect(errorPromise).not.toHaveBeenCalled();
+				});
+			});
 		});
 
-		it('should return an empty Resource immediately', function() {
-			expect(item).toBeDefined();
-			expect(item.data).toBeUndefined();
+		describe('error >', function () {
+			beforeEach(function () {
+				item = service.get({id: 999}, successHandler, errorHandler);
+				item.$promise.then(successPromise, errorPromise);
+				socket.flush();
+			});
+
+			it('calls errorHandler', function () {
+				expect(successHandler).not.toHaveBeenCalled();
+				expect(errorHandler).toHaveBeenCalled();
+			});
+
+			it('calls errorPromise', function () {
+				expect(successPromise).not.toHaveBeenCalled();
+				expect(errorPromise).toHaveBeenCalled();
+			});
 		});
 
-		it('should update to a populated Resource asynchronously', function() {
+		it('works without callbacks', function () {
+			item = service.get({id: 1});
 			socket.flush();
 			expect(item.id).toEqual(1);
 			expect(item.data).toEqual('abc');
 		});
 
-		it('should use callbacks for success and error', function() {
-			var successHandler = jasmine.createSpy('successHandler');
-			var errorHandler = jasmine.createSpy('errorHandler');
-
-			item = service.get({id:2}, successHandler, errorHandler);
-			socket.flush();
-			expect(successHandler).toHaveBeenCalled();
-			expect(errorHandler).not.toHaveBeenCalled();
-
-			item = service.get({id:999}, successHandler, errorHandler);
-			socket.flush();
-			expect(errorHandler).toHaveBeenCalled();
-		});
-
-		it('should retrieve items with string ids', function() {
-			item = service.get({id:'aguid'});
+		it('should retrieve items with string ids', function () {
+			item = service.get({id: 'aguid'});
 			socket.flush();
 			expect(item).toBeDefined();
 			expect(item.data).toEqual('klm');
 		});
 	});
 
-	describe('Resource', function() {
+	describe('Resource >', function () {
 
-		it('should have custom actions', function() {
-			var item = service.get({id:1});
+		it('has custom actions', function () {
+			var item = service.get({id: 1});
 			expect(item.$update).toBeDefined();
 		});
 
-		describe('create', function() {
-
+		describe('create >', function () {
 			var item, originalCount;
-			beforeEach(function() {
+			beforeEach(function () {
 				item = new service();
 				originalCount = socket.itemCount();
 				socket.flush();
+				item.$save();
 			});
 
-			it('should create a new item asynchronously', function() {
-				item.$save();
+			it('creates a new item asynchronously', function () {
 				expect(item.id).toBeUndefined();
 				expect(socket.itemCount()).toEqual(originalCount);
 
 				socket.flush();
 				expect(item.id).toEqual(socket.itemCount());
-				expect(socket.itemCount()).toEqual(originalCount+1);
+				expect(socket.itemCount()).toEqual(originalCount + 1);
 			});
 
-			it('should not send $ properties', function() {
-				item.$save();
+			it('dont send $ properties', function () {
 				socket.flush();
 
 				var items = socket.items();
-				expect(items[items.length-1].$save).toBeUndefined();
-				expect(items[items.length-1].$resolved).toBeUndefined();
+				expect(items[items.length - 1].$save).toBeUndefined();
+				expect(items[items.length - 1].$resolved).toBeUndefined();
 			});
 
-			it('should use callbacks for success', function() {
-				var successHandler = jasmine.createSpy('successHandler');
-				var errorHandler = jasmine.createSpy('errorHandler');
-
+			it('used success callback', function () {
 				item.$save(successHandler, errorHandler);
 				socket.flush();
 				expect(successHandler).toHaveBeenCalled();
 				expect(errorHandler).not.toHaveBeenCalled();
 			});
 
-			it('should use callbacks for error', function() {
-				var successHandler = jasmine.createSpy('successHandler');
-				var errorHandler = jasmine.createSpy('errorHandler');
-
+			it('used error callback', function () {
 				item.unique = '4aa';
 				item.$save(successHandler, errorHandler);
 				socket.flush();
@@ -193,28 +231,27 @@ describe('sailsResource', function() {
 				expect(errorHandler).toHaveBeenCalled();
 			});
 
-            it('does not cache when cache=false', function() {
-                var items = service.nocache();
-                socket.flush();
-                expect(items).toBeDefined();
-                expect(items.length).toEqual(originalCount);
+			it('does not cache when cache=false', function () {
+				var items = service.nocache();
+				socket.flush();
+				expect(items).toBeDefined();
+				expect(items.length).toEqual(originalCount);
 
-                item.$save();
-                socket.flush(); // with cache false the list should not be updated
-                expect(items.length).toEqual(originalCount);
-            });
+				item.$save();
+				socket.flush(); // with cache false the list should not be updated
+				expect(items.length).toEqual(originalCount);
+			});
 		});
 
-		describe('updates', function() {
+		describe('updates >', function () {
 
 			var item;
-			beforeEach(function() {
-				item = service.get({id:1});
+			beforeEach(function () {
+				item = service.get({id: 1});
 				socket.flush();
 			});
 
-			it('should change the item asynchronously', function() {
-
+			it('changes the item asynchronously', function () {
 				expect(item.lastUpdate).toBeUndefined();
 
 				item.data = 'zzz';
@@ -224,24 +261,21 @@ describe('sailsResource', function() {
 				expect(item.lastUpdate).toBeDefined();
 			});
 
-			it('should not send $ properties', function() {
+			it('does not send $ properties', function () {
 				item.$save();
 				socket.flush();
 				expect(socket.items()[0].$save).toBeUndefined();
 				expect(socket.items()[0].$resolved).toBeUndefined();
 			});
 
-			it('should work with custom methods', function() {
+			it('works with custom methods', function () {
 				item.data = 'zyz';
 				item.$update();
 				socket.flush();
 				expect(item.lastUpdate).toBeDefined();
 			});
 
-			it('should use callbacks for success and error', function() {
-				var successHandler = jasmine.createSpy('successHandler');
-				var errorHandler = jasmine.createSpy('errorHandler');
-
+			it('use callbacks for success and error', function () {
 				item.$save(successHandler, errorHandler);
 				socket.flush();
 				expect(successHandler).toHaveBeenCalled();
@@ -254,23 +288,22 @@ describe('sailsResource', function() {
 			});
 		});
 
-		describe('deletes', function() {
-
+		describe('deletes >', function () {
 			var item, originalCount;
-			beforeEach(function() {
-				item = service.get({id:1});
+			beforeEach(function () {
+				item = service.get({id: 1});
 				originalCount = socket.itemCount();
 				socket.flush();
 			});
 
-			it('should remove the item asynchronously', function() {
+			it('should remove the item asynchronously', function () {
 				item.$delete();
 				expect(socket.itemCount()).toEqual(originalCount);
 				socket.flush();
-				expect(socket.itemCount()).toEqual(originalCount-1);
+				expect(socket.itemCount()).toEqual(originalCount - 1);
 			});
 
-			it('should remove the item from all arrays', function() {
+			it('should remove the item from all arrays', function () {
 				var list = service.query();
 				socket.flush();
 
@@ -280,14 +313,11 @@ describe('sailsResource', function() {
 
 				item.$delete();
 				socket.flush();
-				expect(list.length).toEqual(originalCount-1);
+				expect(list.length).toEqual(originalCount - 1);
 				expect(list[0].id).not.toEqual(item.id);
 			});
 
-			it('should use callbacks for success and error', function() {
-				var successHandler = jasmine.createSpy('successHandler');
-				var errorHandler = jasmine.createSpy('errorHandler');
-
+			it('should use callbacks for success and error', function () {
 				item.$delete(successHandler, errorHandler);
 				socket.flush();
 				expect(successHandler).toHaveBeenCalled();
