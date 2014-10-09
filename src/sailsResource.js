@@ -131,13 +131,19 @@
 
 				if (action.method == 'GET') {
 
-					// cache key is params for lists, id for items
-					var key = action.isArray ? JSON.stringify(params || {}) : params.id;
+					// Do not cache if:
+					// 1) action is set to cache=false (the default is true) OR
+					// 2) action uses a custom url (Sails only sends updates to ids) OR
+					// 3) the resource is an individual item without an id (Sails only sends updates to ids)
 
-					// pull out of cache if available, otherwise create new instance
-					item = action.isArray ? cache[key] || [] : cache[params.id] || new Resource({id: params.id});
-
-					if (action.cache) {
+					if(!action.cache || action.url || (!action.isArray && (!params || !params.id))) { // uncached
+						item = action.isArray ? [] : new Resource();
+					}
+					else {
+						// cache key is 1) stringified params for lists or 2) id for individual items
+						var key = action.isArray ? JSON.stringify(params || {}) : params.id;
+						// pull out of cache if available, otherwise create new instance
+						item = cache[key] || action.isArray ? [] : new Resource({id: key});
 						cache[key] = item; // store item in cache
 					}
 
@@ -191,7 +197,7 @@
 
 			function retrieveResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
-				var url = options.prefix + '/' + model + (params && params.id ? '/' + params.id : '') + createQueryString(params);
+				var url = buildUrl(model, params ? params.id : null, action, params, options);
 				socket.get(url, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						if (isArray(item)) { // empty the list and update with returned data
@@ -222,7 +228,7 @@
 				// prevents prototype functions being sent
 				var data = copyAndClear(transformedData || item, {});
 
-				var url = options.prefix + '/' + model + (data.id ? '/' + data.id : '') + createQueryString(params);
+				var url = buildUrl(model, data.id, action, params, options);
 
 				// when Resource has id use PUT, otherwise use POST
 				var method = item.id ? 'put' : 'post';
@@ -242,7 +248,7 @@
 			function deleteResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
 
-				var url = options.prefix + '/' + model + '/' + item.id + createQueryString(params);
+				var url = buildUrl(model, item.id, action, params, options);
 				socket.delete(url, function (response) {
 					handleResponse(item, response, action, deferred, function () {
 						removeFromCache(item.id);
@@ -392,6 +398,24 @@
 
 		dst.$promise = promise;
 		dst.$resolved = resolved;
+	}
+
+	/**
+	 * Builds a sails URL!
+	 */
+	function buildUrl(model, id, action, params, options) {
+		var url = [];
+		if(action && action.url) {
+			url.push(action.url);
+		}
+		else {
+			url.push(options.prefix);
+			url.push('/');
+			url.push(model);
+			if(id) url.push('/' + id);
+		}
+		url.push(createQueryString(params));
+		return url.join('');
 	}
 
 	/**

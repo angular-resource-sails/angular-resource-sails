@@ -1,12 +1,17 @@
 app.controller('HomeController', function ($rootScope, sailsResource) {
 	var self = this;
-	var simple = sailsResource('Simple', {nocache: {method:'GET', isArray: true, cache: false}});
+	var simple = sailsResource('Simple', {
+		nocache: {method:'GET', isArray: true, cache: false},
+		count: {method:'GET', url:'/simple/count'}
+	});
 
 	this.created = 0;
 	this.updated = 0;
 	this.destroyed = 0;
 	this.simpleForm = new simple();
-	this.simpleTypes = simple.query();
+	this.simpleTypes = simple.query(function() {
+		self.refreshServerCount();
+	});
     simple.nocache(function(startingTypes){
         self.startingCount = startingTypes.length;
     });
@@ -14,14 +19,22 @@ app.controller('HomeController', function ($rootScope, sailsResource) {
 	this.add = function () {
 		self.simpleForm.$save(function(newItem) {
 			self.simpleTypes.push(newItem);
+			self.refreshServerCount();
 		});
 		self.simpleForm = new simple();
 	};
+	this.refreshServerCount = function() {
+		// Tests the custom URL functionality
+		self.serverCount = simple.count();
+	};
+
 	this.cancel = function () {
 		self.simpleForm = new simple();
 	};
 	this.deleteSimple = function (simple) {
-		simple.$delete();
+		simple.$delete(function() {
+			self.refreshServerCount();
+		});
 	};
 	this.editSimple = function (simple) {
 		simple.$editing = true;
