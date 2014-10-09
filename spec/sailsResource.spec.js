@@ -104,6 +104,14 @@ describe('sailsResource >', function () {
 				expect(successHandler).toHaveBeenCalled();
 				expect(errorHandler).not.toHaveBeenCalled();
 			});
+
+			it('still has $promise', function () {
+				expect(items.$promise).toBeDefined();
+			});
+
+			it('$resoved is true', function () {
+				expect(items.$resolved).toBeTruthy();
+			});
 		});
 
 		it('query works without callbacks', function () {
@@ -146,6 +154,14 @@ describe('sailsResource >', function () {
 				it('calls successPromise', function () {
 					expect(successPromise).toHaveBeenCalled();
 					expect(errorPromise).not.toHaveBeenCalled();
+				});
+
+				it('still has $promise', function () {
+					expect(item.$promise).toBeDefined();
+				});
+
+				it('$resoved is true', function () {
+					expect(item.$resolved).toBeTruthy();
 				});
 			});
 		});
@@ -241,6 +257,12 @@ describe('sailsResource >', function () {
 				socket.flush(); // with cache false the list should not be updated
 				expect(items.length).toEqual(originalCount);
 			});
+
+			it('has $promise and $resolve', function () {
+				socket.flush();
+				expect(item.$promise).toBeDefined();
+				expect(item.$resolved).toBeTruthy();
+			});
 		});
 
 		describe('updates >', function () {
@@ -329,5 +351,4 @@ describe('sailsResource >', function () {
 			});
 		});
 	});
-
 });

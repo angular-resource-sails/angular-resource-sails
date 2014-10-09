@@ -2,7 +2,6 @@
 
 	var forEach = angular.forEach,
 		extend = angular.extend,
-		copy = angular.copy,
 		isObject = angular.isObject,
 		isArray = angular.isArray,
 		isFunction = angular.isFunction;
@@ -120,7 +119,7 @@
 
 			// Resource constructor
 			function Resource(value) {
-				shallowClearAndCopy(value || {}, this);
+				copyAndClear(value || {}, this);
 			}
 
 			function handleRequest(item, params, action, success, error) {
@@ -152,31 +151,31 @@
 				}
 			}
 
-			function handleResponse(item, response, action, deferred, delegate) {
+			function handleResponse(item, data, action, deferred, delegate) {
 				action = action || {};
 				$rootScope.$apply(function () {
 					item.$resolved = true;
 
-					if (response.error) {
-						$log.error(response);
-						deferred.reject(response.error, item, response);
+					if (data.error) {
+						$log.error(data);
+						deferred.reject(data.error, item, data);
 					}
-					else if (!isArray(item) && isArray(response) && response.length != 1) {
+					else if (!isArray(item) && isArray(data) && data.length != 1) {
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
 						// item is not an array, only one item should be found or an error is thrown.
-						var errorMessage = (response.length ? 'Multiple' : 'No') +
+						var errorMessage = (data.length ? 'Multiple' : 'No') +
 							' items found while performing GET on a singular Resource; did you mean to do a query?';
 
 						$log.error(errorMessage);
-						deferred.reject(errorMessage, item, response);
+						deferred.reject(errorMessage, item, data);
 					}
 					else {
 						// converting single array to single item
-						if (!isArray(item) && isArray(response)) response = response[0];
+						if (!isArray(item) && isArray(data)) data = data[0];
 
-						if (isFunction(action.transformResponse)) response = action.transformResponse(response);
-						if (isFunction(delegate)) delegate(response);
-						deferred.resolve(item, response);
+						if (isFunction(action.transformResponse)) data = action.transformResponse(data);
+						if (isFunction(delegate)) delegate(data);
+						deferred.resolve(item);
 					}
 				});
 			}
@@ -204,7 +203,7 @@
 							});
 						}
 						else {
-							copy(data, item); // update item
+							copyWithPromise(data, item); // update item
 						}
 					});
 				});
@@ -221,7 +220,7 @@
 				}
 
 				// prevents prototype functions being sent
-				var data = shallowClearAndCopy(transformedData || item, {});
+				var data = copyAndClear(transformedData || item, {});
 
 				var url = options.prefix + '/' + model + (data.id ? '/' + data.id : '') + createQueryString(params);
 
@@ -230,7 +229,7 @@
 
 				socket[method](url, data, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
-						copy(data, item);
+						copyWithPromise(data, item);
 						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, {
 							model: model,
 							id: data.id,
@@ -262,7 +261,7 @@
 									retrieveResource(item, {id: item.id});
 								}
 								else {
-									copy(message.data, item);
+									copyWithPromise(message.data, item);
 								}
 							}
 						});
@@ -272,7 +271,7 @@
 							retrieveResource(cacheItem, {id: cacheItem.id});
 						}
 						else {
-							copy(message.data, cacheItem);
+							copyWithPromise(message.data, cacheItem);
 						}
 					}
 				});
@@ -366,11 +365,9 @@
 	}
 
 	/**
-	 * Create a shallow copy of an object and clear other fields from the destination.
-	 * Taken from ngResource source.
-	 * https://code.angularjs.org/1.2.20/angular-resource.js
+	 * Deep copies and removes view properties
 	 */
-	function shallowClearAndCopy(src, dst) {
+	function copyAndClear(src, dst) {
 		dst = dst || (isArray(src) ? [] : {});
 
 		forEach(dst, function (value, key) {
@@ -380,11 +377,21 @@
 		for (var key in src) {
 			if (src.hasOwnProperty(key) && key.charAt(0) !== '$') {
 				var prop = src[key];
-				dst[key] = isObject(prop) ? shallowClearAndCopy(prop) : prop;
+				dst[key] = isObject(prop) ? copyAndClear(prop) : prop;
 			}
 		}
 
 		return dst;
+	}
+
+	function copyWithPromise(src, dst){
+		var promise = dst.$promise;
+		var resolved = dst.$resolved;
+
+		angular.copy(src, dst);
+
+		dst.$promise = promise;
+		dst.$resolved = resolved;
 	}
 
 	/**
