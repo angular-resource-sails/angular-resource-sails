@@ -1,6 +1,7 @@
 (function (angular) {
 
 	var forEach = angular.forEach,
+		copy = angular.copy,
 		extend = angular.extend,
 		isObject = angular.isObject,
 		isArray = angular.isArray,
@@ -19,7 +20,7 @@
 		};
 
 		var DEFAULT_OPTIONS = {
-			// Sails lets you set a prefix, such as '/api'
+			// Set a route prefix, such as '/api'
 			prefix: '',
 			// When verbose, socket updates go to the console
 			verbose: false,
@@ -30,13 +31,13 @@
 		};
 
 		var MESSAGES = {
-			// resource
+			// Resource
 			created: '$sailsResourceCreated',
 			updated: '$sailsResourceUpdated',
 			destroyed: '$sailsResourceDestroyed',
 			messaged: '$sailsResourceMessaged',
 
-			//socket
+			// Socket
 			connected: '$sailsConnected',
 			disconnected: '$sailsDisconnected',
 			reconnected: '$sailsReconnected',
@@ -86,7 +87,7 @@
 				throw 'Model name is required';
 			}
 
-			model = model.toLowerCase(); // sails always sends models lowercase
+			model = model.toLowerCase(); // Sails always sends models lowercase
 			actions = extend({}, DEFAULT_ACTIONS, actions);
 			options = extend({}, DEFAULT_OPTIONS, options);
 
@@ -119,7 +120,7 @@
 
 			// Resource constructor
 			function Resource(value) {
-				copyAndClear(value || {}, this);
+				copy(value || {}, this);
 			}
 
 			function handleRequest(item, params, action, success, error) {
@@ -170,7 +171,7 @@
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
 						// item is not an array, only one item should be found or an error is thrown.
 						var errorMessage = (data.length ? 'Multiple' : 'No') +
-							' items found while performing GET on a singular Resource; did you mean to do a query?';
+							' items found while performing GET on a singular ' + model + ' Resource; did you mean to do a query?';
 
 						$log.error(errorMessage);
 						deferred.reject(errorMessage, item, data);
@@ -394,7 +395,7 @@
 		var promise = dst.$promise;
 		var resolved = dst.$resolved;
 
-		angular.copy(src, dst);
+		copy(src, dst);
 
 		dst.$promise = promise;
 		dst.$resolved = resolved;
