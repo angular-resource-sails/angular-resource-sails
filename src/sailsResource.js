@@ -144,7 +144,7 @@
 						// cache key is 1) stringified params for lists or 2) id for individual items
 						var key = action.isArray ? JSON.stringify(params || {}) : params.id;
 						// pull out of cache if available, otherwise create new instance
-						item = cache[key] || action.isArray ? [] : new Resource({id: key});
+						item = cache[key] || (action.isArray ? [] : new Resource({id: key}));
 						cache[key] = item; // store item in cache
 					}
 
