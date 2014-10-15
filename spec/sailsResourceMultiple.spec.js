@@ -101,7 +101,8 @@ describe('multiple sailsResources', function() {
 
 		it('should be different objects with the same data', function() {
 			expect(item1).not.toBe(item2);
-			expect(item1).toEqualValues(item2);
+			expect(item1.id).toEqual(item2.id);
+			expect(item1.data).toEqual(item2.data);
 		});
 
 		it('should send updated messages asynchronously', function() {
@@ -109,7 +110,8 @@ describe('multiple sailsResources', function() {
 			item1.$save();
 			expect(item1).not.toEqual(item2);
 			socket.flush();
-			expect(item1).toEqualValues(item2);
+			expect(item1.id).toEqual(item2.id);
+			expect(item1.data).toEqual(item2.data);
 		});
 
 		it('should send destroyed messages asynchronously', function() {
