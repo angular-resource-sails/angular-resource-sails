@@ -10,7 +10,6 @@
 	angular.module('sailsResource', []).factory('sailsResource', ['$rootScope', '$window', '$log', '$q', resourceFactory]);
 
 	function resourceFactory($rootScope, $window, $log, $q) {
-		var scope = $rootScope.$new();
 
 		var DEFAULT_ACTIONS = {
 			'get': {method: 'GET'},
@@ -138,7 +137,7 @@
 					// 2) action uses a custom url (Sails only sends updates to ids) OR
 					// 3) the resource is an individual item without an id (Sails only sends updates to ids)
 
-					if (!action.cache || action.url || (!action.isArray && (!params || !params.id))) { // uncached
+					if(!action.cache || action.url || (!action.isArray && (!params || !params.id))) { // uncached
 						item = action.isArray ? [] : new Resource();
 					}
 					else {
@@ -161,7 +160,7 @@
 
 			function handleResponse(item, data, action, deferred, delegate) {
 				action = action || {};
-				scope.$apply(function () {
+				$rootScope.$apply(function () {
 					item.$resolved = true;
 
 					if (data.error) {
@@ -316,6 +315,7 @@
 						// let angular-resource-sails refetch important data after
 						// a server disconnect then reconnect happens
 						socket.on('reconnect', function () {
+							$rootScope.$broadcast();
 							handleRequest(self, params, action, success, error);
 						});
 					}
@@ -330,7 +330,7 @@
 					$log.log('sailsResource received \'' + model + '\' message: ', message);
 				}
 				var messageName = null;
-				scope.$apply(function () {
+				$rootScope.$apply(function () {
 					switch (message.verb) {
 						case 'updated':
 							socketUpdateResource(message);
@@ -391,7 +391,7 @@
 		return dst;
 	}
 
-	function copyWithPromise(src, dst) {
+	function copyWithPromise(src, dst){
 		var promise = dst.$promise;
 		var resolved = dst.$resolved;
 
@@ -406,14 +406,14 @@
 	 */
 	function buildUrl(model, id, action, params, options) {
 		var url = [];
-		if (action && action.url) {
+		if(action && action.url) {
 			url.push(action.url);
 		}
 		else {
 			url.push(options.prefix);
 			url.push('/');
 			url.push(model);
-			if (id) url.push('/' + id);
+			if(id) url.push('/' + id);
 		}
 		url.push(createQueryString(params));
 		return url.join('');
