@@ -79,10 +79,10 @@ angular.module('sailsResource').factory('mockSocket', function() {
 					callback({ status: 404, error: 'E_NOTFOUND', summary: 'Widget with id ' + updated.id + ' could not be found'});
 				}
 				else {
-					angular.copy(updated, widget);
-					callback(updated);
+					angular.extend(widget, updated);
+					callback(widget);
 
-					var message = { verb: 'updated', id: updated.id, data: updated };
+					var message = { verb: 'updated', id: widget.id, data: widget };
 					angular.forEach(subscribers, function (sub) {
 						sub(message);
 					});

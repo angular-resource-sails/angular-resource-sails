@@ -137,7 +137,7 @@
 					// 2) action uses a custom url (Sails only sends updates to ids) OR
 					// 3) the resource is an individual item without an id (Sails only sends updates to ids)
 
-					if(!action.cache || action.url || (!action.isArray && (!params || !params.id))) { // uncached
+					if (!action.cache || action.url || (!action.isArray && (!params || !params.id))) { // uncached
 						item = action.isArray ? [] : new Resource();
 					}
 					else {
@@ -210,7 +210,7 @@
 							});
 						}
 						else {
-							copyWithPromise(data, item); // update item
+							extend(item, data); // update item
 						}
 					});
 				});
@@ -236,7 +236,7 @@
 
 				socket[method](url, data, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
-						copyWithPromise(data, item);
+						extend(item, data);
 						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, {
 							model: model,
 							id: data.id,
@@ -268,7 +268,7 @@
 									retrieveResource(item, {id: item.id});
 								}
 								else {
-									copyWithPromise(message.data, item);
+									extend(item, message.data);
 								}
 							}
 						});
@@ -278,7 +278,7 @@
 							retrieveResource(cacheItem, {id: cacheItem.id});
 						}
 						else {
-							copyWithPromise(message.data, cacheItem);
+							extend(cacheItem, message.data);
 						}
 					}
 				});
@@ -391,29 +391,19 @@
 		return dst;
 	}
 
-	function copyWithPromise(src, dst){
-		var promise = dst.$promise;
-		var resolved = dst.$resolved;
-
-		copy(src, dst);
-
-		dst.$promise = promise;
-		dst.$resolved = resolved;
-	}
-
 	/**
 	 * Builds a sails URL!
 	 */
 	function buildUrl(model, id, action, params, options) {
 		var url = [];
-		if(action && action.url) {
+		if (action && action.url) {
 			url.push(action.url);
 		}
 		else {
 			url.push(options.prefix);
 			url.push('/');
 			url.push(model);
-			if(id) url.push('/' + id);
+			if (id) url.push('/' + id);
 		}
 		url.push(createQueryString(params));
 		return url.join('');

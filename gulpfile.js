@@ -54,6 +54,12 @@ gulp.task('protractor', ['protractor-read', 'protractor-write'], function () {
 
 gulp.task('default', ['protractor']);
 
+// for some reason gulp has a hard time closing when using protractor
+// this helps force it
+gulp.doneCallback = function (err) {
+	process.exit(err ? 1 : 0);
+};
+
 function runProtractor(suite, cb) {
 
 	var configFile = "protractor.conf.js";

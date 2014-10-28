@@ -283,6 +283,15 @@ describe('sailsResource >', function () {
 				expect(item.lastUpdate).toBeDefined();
 			});
 
+			it('can perform partial updates', function() {
+				var dataValue = item.data;
+				delete item.data; // deleting locally, shouldn't change server side
+
+				item.$save();
+				socket.flush();
+				expect(item.data).toEqual(dataValue);
+			});
+
 			it('does not send $ properties', function () {
 				item.$save();
 				socket.flush();

@@ -1,6 +1,5 @@
 var Homepage = require('./shared/Homepage');
 
-
 describe('homepage write >', function () {
 
 	var home = new Homepage();
