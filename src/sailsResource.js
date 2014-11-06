@@ -163,7 +163,7 @@
 				$rootScope.$apply(function () {
 					item.$resolved = true;
 
-					if (data.error) {
+					if (data.error || data.statusCode > 400) {
 						$log.error(data);
 						deferred.reject(data.error, item, data);
 					}
