@@ -171,7 +171,7 @@
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
 						// item is not an array, only one item should be found or an error is thrown.
 						var errorMessage = (data.length ? 'Multiple' : 'No') +
-							' items found while performing GET on a singular ' + model + ' Resource; did you mean to do a query?';
+							' items found while performing GET on a singular \'' + model + '\' Resource; did you mean to do a query?';
 
 						$log.error(errorMessage);
 						deferred.reject(errorMessage, item, data);
@@ -198,7 +198,10 @@
 
 			function retrieveResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
+
 				var url = buildUrl(model, params ? params.id : null, action, params, options);
+				item.$retrieveUrl = url;
+
 				socket.get(url, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						if (isArray(item)) { // empty the list and update with returned data
@@ -211,6 +214,11 @@
 						}
 						else {
 							extend(item, data); // update item
+
+							// If item is not in the cache based on its id, add it now
+							if(!cache[item.id]) {
+								cache[item.id] = item;
+							}
 						}
 					});
 				});
@@ -397,7 +405,19 @@
 	function buildUrl(model, id, action, params, options) {
 		var url = [];
 		if (action && action.url) {
-			url.push(action.url);
+			var actionUrl = action.url;
+
+			// Look for :params in url and replace with params we have
+			var matches = action.url.match(/(:\w+)/g);
+			if(matches) {
+				forEach(matches, function(match) {
+					var paramName = match.replace(':', '');
+					actionUrl = actionUrl.replace(match, params[paramName]);
+					delete params[paramName];
+				});
+			}
+
+			url.push(actionUrl);
 		}
 		else {
 			url.push(options.prefix);

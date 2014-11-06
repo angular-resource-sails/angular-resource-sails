@@ -32,7 +32,8 @@ describe('sailsResource >', function () {
 					return response;
 				}
 			},
-			'nocache': {method: 'GET', isArray: true, cache: false}
+			'nocache': {method: 'GET', isArray: true, cache: false},
+			'customRoute': {method: 'GET', url: '/widget/:customId'}
 		};
 
 		var options = {
@@ -109,7 +110,7 @@ describe('sailsResource >', function () {
 				expect(items.$promise).toBeDefined();
 			});
 
-			it('$resoved is true', function () {
+			it('$resolved is true', function () {
 				expect(items.$resolved).toBeTruthy();
 			});
 		});
@@ -117,6 +118,11 @@ describe('sailsResource >', function () {
 		it('query works without callbacks', function () {
 			items = service.query();
 			socket.flush();
+		});
+
+		it('query works with custom url', function() {
+			var customItem = service.customRoute({customId: 'blah'});
+			expect(customItem.$retrieveUrl).toEqual('/widget/blah');
 		});
 	});
 
