@@ -5,6 +5,7 @@
 		extend = angular.extend,
 		isObject = angular.isObject,
 		isArray = angular.isArray,
+		isString = angular.isString,
 		isFunction = angular.isFunction;
 
 	angular.module('sailsResource', []).factory('sailsResource', ['$rootScope', '$window', '$log', '$q', resourceFactory]);
@@ -163,9 +164,9 @@
 				$rootScope.$apply(function () {
 					item.$resolved = true;
 
-					if (data.error || data.statusCode > 400) {
+					if (data.error || data.statusCode > 400 || isString(data)) {
 						$log.error(data);
-						deferred.reject(data.error, item, data);
+						deferred.reject(data.error || data, item, data);
 					}
 					else if (!isArray(item) && isArray(data) && data.length != 1) {
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
