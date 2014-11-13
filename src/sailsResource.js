@@ -82,6 +82,12 @@
 			});
 		});
 
+		$window.onbeforeunload = function () {
+			if($window.io) {
+				$window.io.socket.disconnect();
+			}
+		};
+
 		return function (model, actions, options) {
 
 			if (typeof model != 'string' || model.length == 0) {
