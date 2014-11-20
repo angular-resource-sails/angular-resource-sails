@@ -254,8 +254,8 @@
 						extend(item, data);
 						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, {
 							model: model,
-							id: data.id,
-							data: data
+							id: item.id,
+							data: item
 						});
 					});
 				});
