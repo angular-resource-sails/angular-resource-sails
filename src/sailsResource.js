@@ -83,7 +83,7 @@
 		});
 
 		$window.onbeforeunload = function () {
-			if($window.io) {
+			if ($window.io) {
 				$window.io.socket.disconnect();
 			}
 		};
@@ -223,7 +223,7 @@
 							extend(item, data); // update item
 
 							// If item is not in the cache based on its id, add it now
-							if(!cache[item.id]) {
+							if (!cache[item.id]) {
 								cache[item.id] = item;
 							}
 						}
@@ -416,10 +416,10 @@
 
 			// Look for :params in url and replace with params we have
 			var matches = action.url.match(/(:\w+)/g);
-			if(matches) {
-				forEach(matches, function(match) {
+			if (matches) {
+				forEach(matches, function (match) {
 					var paramName = match.replace(':', '');
-					actionUrl = actionUrl.replace(match, params[paramName]);
+					actionUrl = actionUrl.replace(match, paramName == 'id' ? id : params[paramName]);
 					delete params[paramName];
 				});
 			}
