@@ -8,19 +8,10 @@
 		isString = angular.isString,
 		isFunction = angular.isFunction;
 
-	angular.module('sailsResource', []).factory('sailsResource', ['$rootScope', '$window', '$log', '$q', resourceFactory]);
+	angular.module('sailsResource', []).provider('sailsResource', function () {
 
-	function resourceFactory($rootScope, $window, $log, $q) {
-
-		var DEFAULT_ACTIONS = {
-			'get': {method: 'GET'},
-			'save': {method: 'POST'},
-			'query': {method: 'GET', isArray: true},
-			'remove': {method: 'DELETE'},
-			'delete': {method: 'DELETE'}
-		};
-
-		var DEFAULT_OPTIONS = {
+		// Default config
+		var DEFAULT_CONFIGURATION = {
 			// Set a route prefix, such as '/api'
 			prefix: '',
 			// When verbose, socket updates go to the console
@@ -29,6 +20,24 @@
 			socket: null,
 			// Set a specific origin, used for testing
 			origin: null
+		};
+
+		this.configuration = {};
+
+		this.$get = ['$rootScope', '$window', '$log', '$q', function ($rootScope, $window, $log, $q) {
+			var config = extend({}, DEFAULT_CONFIGURATION, this.configuration);
+			return resourceFactory($rootScope, $window, $log, $q, config);
+		}];
+	});
+
+	function resourceFactory($rootScope, $window, $log, $q, config) {
+
+		var DEFAULT_ACTIONS = {
+			'get': {method: 'GET'},
+			'save': {method: 'POST'},
+			'query': {method: 'GET', isArray: true},
+			'remove': {method: 'DELETE'},
+			'delete': {method: 'DELETE'}
 		};
 
 		var MESSAGES = {
@@ -96,7 +105,7 @@
 
 			model = model.toLowerCase(); // Sails always sends models lowercase
 			actions = extend({}, DEFAULT_ACTIONS, actions);
-			options = extend({}, DEFAULT_OPTIONS, options);
+			options = extend({}, config, options);
 
 			// Ensure prefix starts with forward slash
 			if (options.prefix && options.prefix.charAt(0) != '/') {
