@@ -122,7 +122,7 @@ describe('sailsResource >', function () {
 
 		it('query works with custom url', function() {
 			var customItem = service.customRoute({customId: 'blah'});
-			expect(customItem.$retrieveUrl).toEqual('/widget/blah');
+			expect(customItem.$retrieveUrl).toEqual('/widget/blah?customId=blah');
 		});
 	});
 
