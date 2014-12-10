@@ -10,7 +10,6 @@
 
 	angular.module('sailsResource', []).provider('sailsResource', function () {
 
-		// Default config
 		var DEFAULT_CONFIGURATION = {
 			// Set a route prefix, such as '/api'
 			prefix: '',
@@ -339,7 +338,6 @@
 						// let angular-resource-sails refetch important data after
 						// a server disconnect then reconnect happens
 						socket.on('reconnect', function () {
-							$rootScope.$broadcast();
 							handleRequest(self, params, action, success, error);
 						});
 					}
@@ -429,7 +427,6 @@
 				forEach(matches, function (match) {
 					var paramName = match.replace(':', '');
 					actionUrl = actionUrl.replace(match, paramName == 'id' ? id : params[paramName]);
-					delete params[paramName];
 				});
 			}
 
