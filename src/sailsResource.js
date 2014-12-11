@@ -217,6 +217,10 @@
 				var url = buildUrl(model, params ? params.id : null, action, params, options);
 				item.$retrieveUrl = url;
 
+				if(options.verbose) {
+					$log.info('sailsResource calling GET ' + url);
+				}
+
 				socket.get(url, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						if (isArray(item)) { // empty the list and update with returned data
@@ -257,6 +261,10 @@
 				// when Resource has id use PUT, otherwise use POST
 				var method = item.id ? 'put' : 'post';
 
+				if(options.verbose) {
+					$log.info('sailsResource calling ' + method.toUpperCase() + ' ' + url);
+				}
+
 				socket[method](url, data, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						extend(item, data);
@@ -273,6 +281,9 @@
 				var deferred = attachPromise(item, success, error);
 
 				var url = buildUrl(model, item.id, action, params, options);
+				if(options.verbose) {
+					$log.info('sailsResource calling DELETE ' + url);
+				}
 				socket.delete(url, function (response) {
 					handleResponse(item, response, action, deferred, function () {
 						removeFromCache(item.id);
@@ -349,7 +360,7 @@
 			// Subscribe to changes
 			socket.on(model, function (message) {
 				if (options.verbose) {
-					$log.log('sailsResource received \'' + model + '\' message: ', message);
+					$log.info('sailsResource received \'' + model + '\' message: ', message);
 				}
 				var messageName = null;
 				$rootScope.$apply(function () {
