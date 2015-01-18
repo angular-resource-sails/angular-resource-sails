@@ -13,11 +13,11 @@
 		"package.json"
 	],
 	"dependencies": {
-		"angular-unstable": "latest",
-		"jasmine": "latest",
-		"sails.io.js": "https://github.com/JasonMore/sails.io.js.git#18ac774"
+		"angular": "latest",
+		"sails.io.js": "latest"
 	},
 	"devDependencies": {
+		"jasmine": "latest",
 		"angular-mocks": "latest"
 	}
 }
