@@ -168,10 +168,10 @@ io.sails.autoConnect = false;
 					return retrieveResource(item, params, action, success, error);
 				}
 				else if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
-					createOrUpdateResource(item, params, action, success, error);
+					return createOrUpdateResource(item, params, action, success, error);
 				}
 				else if (action.method == 'DELETE') { // Delete individual instance of model
-					deleteResource(item, params, action, success, error);
+					return deleteResource(item, params, action, success, error);
 				}
 			}
 
@@ -277,6 +277,8 @@ io.sails.autoConnect = false;
 						});
 					});
 				});
+
+				return item;
 			}
 
 			function deleteResource(item, params, action, success, error) {
@@ -293,6 +295,8 @@ io.sails.autoConnect = false;
 						// leave local instance unmodified
 					});
 				});
+
+				return item;
 			}
 
 			function socketUpdateResource(message) {

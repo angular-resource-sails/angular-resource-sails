@@ -232,7 +232,7 @@ describe('sailsResource >', function () {
 				expect(socket.itemCount()).toEqual(originalCount + 1);
 			});
 
-			it('dont send $ properties', function () {
+			it('doesn\'t send $ properties', function () {
 				socket.flush();
 
 				var items = socket.items();
@@ -325,6 +325,18 @@ describe('sailsResource >', function () {
 				socket.flush();
 				expect(errorHandler).toHaveBeenCalled();
 			});
+
+			it('has $promise', function () {
+				var promise = item.$save().$promise;
+				var callback = jasmine.createSpy('callback');
+				promise.then(callback);
+
+				expect(promise).toBeDefined();
+				expect(callback).not.toHaveBeenCalled();
+				socket.flush();
+				expect(callback).toHaveBeenCalled();
+				expect(promise).toBeDefined();
+			});
 		});
 
 		describe('deletes >', function () {
@@ -365,6 +377,18 @@ describe('sailsResource >', function () {
 				item.$delete(successHandler, errorHandler);
 				socket.flush();
 				expect(errorHandler).toHaveBeenCalled();
+			});
+
+			it('has $promise', function () {
+				var promise = item.$delete().$promise;
+				var callback = jasmine.createSpy('callback');
+				promise.then(callback);
+
+				expect(promise).toBeDefined();
+				expect(callback).not.toHaveBeenCalled();
+				socket.flush();
+				expect(callback).toHaveBeenCalled();
+				expect(promise).toBeDefined();
 			});
 		});
 	});
