@@ -247,6 +247,13 @@ io.sails.autoConnect = false;
 			}
 
 			function createOrUpdateResource(item, params, action, success, error) {
+
+				// When we have no item, params is assumed to be the item data
+				if(!item) {
+					item = params;
+					params = {};
+				}
+
 				var deferred = attachPromise(item, success, error);
 
 				// prep data
@@ -282,6 +289,13 @@ io.sails.autoConnect = false;
 			}
 
 			function deleteResource(item, params, action, success, error) {
+
+				// When we have no item, params is assumed to be the item data
+				if(!item) {
+					item = params;
+					params = {};
+				}
+
 				var deferred = attachPromise(item, success, error);
 
 				var url = buildUrl(model, item.id, action, params, options);
@@ -344,23 +358,27 @@ io.sails.autoConnect = false;
 			forEach(actions, function (action, name) {
 				// fill in default action options
 				action = extend({}, {cache: true, isArray: false}, action);
-				// instance methods added to prototype with $ prefix
-				var isInstanceMethod = /^(POST|PUT|PATCH|DELETE)$/i.test(action.method);
-				var addTo = isInstanceMethod ? Resource.prototype : Resource;
-				var actionName = isInstanceMethod ? '$' + name : name;
 
-				addTo[actionName] = function (params, success, error) {
+				function actionMethod(params, success, error) {
 					var self = this;
 					if (action.fetchAfterReconnect) {
 						// let angular-resource-sails refetch important data after
 						// a server disconnect then reconnect happens
 						socket.on('reconnect', function () {
-							handleRequest(self, params, action, success, error);
+							handleRequest(isObject(self) ? self : null, params, action, success, error);
 						});
 					}
 
-					return handleRequest(this, params, action, success, error);
-				};
+					return handleRequest(isObject(this) ? this : null, params, action, success, error);
+				}
+
+				if(/^(POST|PUT|PATCH|DELETE)$/i.test(action.method)) {
+					// Add to instance methods to prototype with $ prefix, GET methods not included
+					Resource.prototype['$' + name] = actionMethod;
+				}
+
+				// All method types added to service without $ prefix
+				Resource[name] = actionMethod;
 			});
 
 			// Subscribe to changes

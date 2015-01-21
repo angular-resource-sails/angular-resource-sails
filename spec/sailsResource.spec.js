@@ -209,6 +209,18 @@ describe('sailsResource >', function () {
 
 	describe('Resource >', function () {
 
+		it('has default actions with $ prefix', function() {
+			var item = service.get({id: 1});
+			expect(item.$save).toBeDefined();
+			expect(item.$delete).toBeDefined();
+		});
+
+		it('does not have GET actions', function() {
+			var item = service.get({id: 1});
+			expect(item.$get).not.toBeDefined();
+			expect(item.get).not.toBeDefined();
+		});
+
 		it('has custom actions', function () {
 			var item = service.get({id: 1});
 			expect(item.$update).toBeDefined();
@@ -337,6 +349,24 @@ describe('sailsResource >', function () {
 				expect(callback).toHaveBeenCalled();
 				expect(promise).toBeDefined();
 			});
+
+			it('can be called from the service, with just data', function() {
+				service.save({data:'zztop'}).then(function(savedItem) {
+					expect(savedItem).toBeDefined();
+					expect(savedItem.id).toBeDefined();
+					expect(savedItem.data).toEqual('zztop');
+				});
+				socket.flush();
+			});
+
+			it('can be called from the service, with a current item', function() {
+				service.save(item).then(function(savedItem) {
+					expect(savedItem).toBeDefined();
+					expect(savedItem.id).toEqual(1);
+					expect(savedItem.data).toEqual('abc');
+				});
+				socket.flush();
+			});
 		});
 
 		describe('deletes >', function () {
@@ -389,6 +419,22 @@ describe('sailsResource >', function () {
 				socket.flush();
 				expect(callback).toHaveBeenCalled();
 				expect(promise).toBeDefined();
+			});
+
+			it('can be called from the service, with just data', function() {
+				service.delete({id: 1}).then(function() {
+					expect(socket.itemCount()).toEqual(originalCount - 1);
+				});
+				expect(socket.itemCount()).toEqual(originalCount);
+				socket.flush();
+			});
+
+			it('can be called from the service, with a current item', function() {
+				service.delete(item).then(function() {
+					expect(socket.itemCount()).toEqual(originalCount - 1);
+				});
+				expect(socket.itemCount()).toEqual(originalCount);
+				socket.flush();
 			});
 		});
 	});
