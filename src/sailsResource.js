@@ -144,7 +144,7 @@
 					params = {};
 				}
 
-				if (action.method == 'GET') {
+				if (action.method.toUpperCase() === 'GET') {
 
 					// Do not cache if:
 					// 1) action is set to cache=false (the default is true) OR
@@ -164,10 +164,10 @@
 
 					return retrieveResource(item, params, action, success, error);
 				}
-				else if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
+				else if (action.method.toUpperCase() === 'POST' || action.method.toUpperCase() === 'PUT') { // Update individual instance of model
 					createOrUpdateResource(item, params, action, success, error);
 				}
-				else if (action.method == 'DELETE') { // Delete individual instance of model
+				else if (action.method.toUpperCase() === 'DELETE') { // Delete individual instance of model
 					deleteResource(item, params, action, success, error);
 				}
 			}
@@ -177,9 +177,9 @@
 				$rootScope.$apply(function () {
 					item.$resolved = true;
 
-					if (data.error || jwr.statusCode > 400 || isString(data)) {
+					if (jwr.error || jwr.statusCode > 400 || isString(data)) {
 						$log.error(data);
-						deferred.reject(data.error || data, item, data);
+						deferred.reject(jwr.error || data, item, data);
 					}
 					else if (!isArray(item) && isArray(data) && data.length != 1) {
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
