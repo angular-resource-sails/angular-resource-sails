@@ -172,12 +172,12 @@
 				}
 			}
 
-			function handleResponse(item, data, action, deferred, delegate) {
+			function handleResponse(item, data, jwr, action, deferred, delegate) {
 				action = action || {};
 				$rootScope.$apply(function () {
 					item.$resolved = true;
 
-					if (data.error || data.statusCode > 400 || isString(data)) {
+					if (data.error || jwr.statusCode > 400 || isString(data)) {
 						$log.error(data);
 						deferred.reject(data.error || data, item, data);
 					}
@@ -220,8 +220,8 @@
 					$log.info('sailsResource calling GET ' + url);
 				}
 
-				socket.get(url, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
+				socket.get(url, function (response, jwr) {
+					handleResponse(item, response, jwr, action, deferred, function (data) {
 						if (isArray(item)) { // empty the list and update with returned data
 							while (item.length) item.pop();
 							forEach(data, function (responseItem) {
@@ -264,8 +264,8 @@
 					$log.info('sailsResource calling ' + method.toUpperCase() + ' ' + url);
 				}
 
-				socket[method](url, data, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
+				socket[method](url, data, function (response, jwr) {
+					handleResponse(item, response, jwr, action, deferred, function (data) {
 						extend(item, data);
 						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, {
 							model: model,
@@ -283,8 +283,8 @@
 				if(options.verbose) {
 					$log.info('sailsResource calling DELETE ' + url);
 				}
-				socket.delete(url, function (response) {
-					handleResponse(item, response, action, deferred, function () {
+				socket.delete(url, function (response, jwr) {
+					handleResponse(item, response, jwr, action, deferred, function () {
 						removeFromCache(item.id);
 						$rootScope.$broadcast(MESSAGES.destroyed, {model: model, id: item.id});
 						// leave local instance unmodified
