@@ -278,7 +278,7 @@ io.sails.autoConnect = false;
 					});
 				});
 
-				return item;
+				return item.$promise;
 			}
 
 			function deleteResource(item, params, action, success, error) {
@@ -296,7 +296,7 @@ io.sails.autoConnect = false;
 					});
 				});
 
-				return item;
+				return item.$promise;
 			}
 
 			function socketUpdateResource(message) {

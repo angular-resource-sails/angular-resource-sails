@@ -327,7 +327,7 @@ describe('sailsResource >', function () {
 			});
 
 			it('has $promise', function () {
-				var promise = item.$save().$promise;
+				var promise = item.$save();
 				var callback = jasmine.createSpy('callback');
 				promise.then(callback);
 
@@ -380,7 +380,7 @@ describe('sailsResource >', function () {
 			});
 
 			it('has $promise', function () {
-				var promise = item.$delete().$promise;
+				var promise = item.$delete();
 				var callback = jasmine.createSpy('callback');
 				promise.then(callback);
 
