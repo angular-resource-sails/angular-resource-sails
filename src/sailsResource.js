@@ -54,7 +54,7 @@
 			socketError: '$sailsSocketError'
 		};
 
-		var socket = $window.io.socket;
+		var socket = $window.io.socket || io.sails.connect();
 
 		socket.on('connect', function () {
 			$rootScope.$apply(function () {
