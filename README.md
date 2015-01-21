@@ -17,7 +17,7 @@ binding necessary for realtime updates to affect the client.
 
 Install
 =====================
-Add 'angular-resource-sails' to your bower.json file. Add the following to your page head:
+Add 'angular-resource-sails' to your bower.json file and the following to your page head:
 ```
 <script src="/bower_components/sails.io.js/dist/sails.io.js"></script>
 <script src="/bower_components/angular-resource-sails/src/sailsResource.js"></script>
