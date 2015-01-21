@@ -93,8 +93,8 @@ io.sails.autoConnect = false;
 		});
 
 		$window.onbeforeunload = function () {
-			if ($window.io) {
-				$window.io.socket.disconnect();
+			if (socket) {
+				socket.disconnect();
 			}
 		};
 
@@ -140,7 +140,11 @@ io.sails.autoConnect = false;
 				copy(value || {}, this);
 			}
 
+			// Handle a request
+			// Does a small amount of preparation of data and directs to the appropriate request handler
 			function handleRequest(item, params, action, success, error) {
+
+				// When params is a function, it's actually a callback and no params were provided
 				if (isFunction(params)) {
 					error = success;
 					success = params;
@@ -167,14 +171,23 @@ io.sails.autoConnect = false;
 
 					return retrieveResource(item, params, action, success, error);
 				}
-				else if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
-					return createOrUpdateResource(item, params, action, success, error);
-				}
-				else if (action.method == 'DELETE') { // Delete individual instance of model
-					return deleteResource(item, params, action, success, error);
+				else {
+					// When we have no item, params is assumed to be the item data
+					if (!item) {
+						item = params;
+						params = {};
+					}
+
+					if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
+						return createOrUpdateResource(item, params, action, success, error);
+					}
+					else if (action.method == 'DELETE') { // Delete individual instance of model
+						return deleteResource(item, params, action, success, error);
+					}
 				}
 			}
 
+			// Handle a response
 			function handleResponse(item, data, action, deferred, delegate) {
 				action = action || {};
 				$rootScope.$apply(function () {
@@ -213,13 +226,14 @@ io.sails.autoConnect = false;
 				return deferred;
 			}
 
+			// Request handler function for GETs
 			function retrieveResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
 
 				var url = buildUrl(model, params ? params.id : null, action, params, options);
 				item.$retrieveUrl = url;
 
-				if(options.verbose) {
+				if (options.verbose) {
 					$log.info('sailsResource calling GET ' + url);
 				}
 
@@ -246,6 +260,7 @@ io.sails.autoConnect = false;
 				return item;
 			}
 
+			// Request handler function for PUTs and POSTs
 			function createOrUpdateResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
 
@@ -263,7 +278,7 @@ io.sails.autoConnect = false;
 				// when Resource has id use PUT, otherwise use POST
 				var method = item.id ? 'put' : 'post';
 
-				if(options.verbose) {
+				if (options.verbose) {
 					$log.info('sailsResource calling ' + method.toUpperCase() + ' ' + url);
 				}
 
@@ -281,11 +296,12 @@ io.sails.autoConnect = false;
 				return item.$promise;
 			}
 
+			// Request handler function for DELETEs
 			function deleteResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
-
 				var url = buildUrl(model, item.id, action, params, options);
-				if(options.verbose) {
+
+				if (options.verbose) {
 					$log.info('sailsResource calling DELETE ' + url);
 				}
 				socket.delete(url, function (response) {
@@ -340,28 +356,40 @@ io.sails.autoConnect = false;
 				removeFromCache(message.id);
 			}
 
-			// Add each action to the Resource or its prototype
+			// Add each action to the Resource and/or its prototype
 			forEach(actions, function (action, name) {
 				// fill in default action options
 				action = extend({}, {cache: true, isArray: false}, action);
-				// instance methods added to prototype with $ prefix
-				var isInstanceMethod = /^(POST|PUT|PATCH|DELETE)$/i.test(action.method);
-				var addTo = isInstanceMethod ? Resource.prototype : Resource;
-				var actionName = isInstanceMethod ? '$' + name : name;
 
-				addTo[actionName] = function (params, success, error) {
+				function actionMethod(params, success, error) {
 					var self = this;
 					if (action.fetchAfterReconnect) {
 						// let angular-resource-sails refetch important data after
 						// a server disconnect then reconnect happens
 						socket.on('reconnect', function () {
-							handleRequest(self, params, action, success, error);
+							handleRequest(isObject(self) ? self : null, params, action, success, error);
 						});
 					}
 
-					return handleRequest(this, params, action, success, error);
-				};
+					return handleRequest(isObject(this) ? this : null, params, action, success, error);
+				}
+
+				if (/^(POST|PUT|PATCH|DELETE)$/i.test(action.method)) {
+					// Add to instance methods to prototype with $ prefix, GET methods not included
+					Resource.prototype['$' + name] = actionMethod;
+				}
+
+				// All method types added to service without $ prefix
+				Resource[name] = actionMethod;
 			});
+
+			// Handy function for converting a Resource into plain JSON data
+			Resource.prototype.toJSON = function() {
+				var data = extend({}, this);
+				delete data.$promise;
+				delete data.$resolved;
+				return data;
+			};
 
 			// Subscribe to changes
 			socket.on(model, function (message) {

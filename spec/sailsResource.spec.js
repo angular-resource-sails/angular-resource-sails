@@ -122,7 +122,7 @@ describe('sailsResource >', function () {
 			socket.flush();
 		});
 
-		it('query works with custom url', function() {
+		it('query works with custom url', function () {
 			var customItem = service.customRoute({customId: 'blah'});
 			expect(customItem.$retrieveUrl).toEqual('/widget/blah?customId=blah');
 		});
@@ -209,9 +209,31 @@ describe('sailsResource >', function () {
 
 	describe('Resource >', function () {
 
+		it('has default actions with $ prefix', function () {
+			var item = service.get({id: 1});
+			expect(item.$save).toBeDefined();
+			expect(item.$delete).toBeDefined();
+		});
+
+		it('does not have GET actions', function () {
+			var item = service.get({id: 1});
+			expect(item.$get).not.toBeDefined();
+			expect(item.get).not.toBeDefined();
+		});
+
 		it('has custom actions', function () {
 			var item = service.get({id: 1});
 			expect(item.$update).toBeDefined();
+		});
+
+		it('can be converted into plain JSON', function () {
+			var item = service.get({id: 1});
+			var plain = item.toJSON();
+			expect(item.$promise).toBeDefined();
+			expect(item.$resolved).toBeDefined();
+			expect(plain.$promise).not.toBeDefined();
+			expect(plain.$resolved).not.toBeDefined();
+			expect(plain.id).toEqual(1);
 		});
 
 		describe('create >', function () {
@@ -291,7 +313,7 @@ describe('sailsResource >', function () {
 				expect(item.lastUpdate).toBeDefined();
 			});
 
-			it('can perform partial updates', function() {
+			it('can perform partial updates', function () {
 				var dataValue = item.data;
 				delete item.data; // deleting locally, shouldn't change server side
 
@@ -336,6 +358,24 @@ describe('sailsResource >', function () {
 				socket.flush();
 				expect(callback).toHaveBeenCalled();
 				expect(promise).toBeDefined();
+			});
+
+			it('can be called from the service, with just data', function () {
+				service.save({data: 'zztop'}).then(function (savedItem) {
+					expect(savedItem).toBeDefined();
+					expect(savedItem.id).toBeDefined();
+					expect(savedItem.data).toEqual('zztop');
+				});
+				socket.flush();
+			});
+
+			it('can be called from the service, with a current item', function () {
+				service.save(item).then(function (savedItem) {
+					expect(savedItem).toBeDefined();
+					expect(savedItem.id).toEqual(1);
+					expect(savedItem.data).toEqual('abc');
+				});
+				socket.flush();
 			});
 		});
 
@@ -389,6 +429,22 @@ describe('sailsResource >', function () {
 				socket.flush();
 				expect(callback).toHaveBeenCalled();
 				expect(promise).toBeDefined();
+			});
+
+			it('can be called from the service, with just data', function () {
+				service.delete({id: 1}).then(function () {
+					expect(socket.itemCount()).toEqual(originalCount - 1);
+				});
+				expect(socket.itemCount()).toEqual(originalCount);
+				socket.flush();
+			});
+
+			it('can be called from the service, with a current item', function () {
+				service.delete(item).then(function () {
+					expect(socket.itemCount()).toEqual(originalCount - 1);
+				});
+				expect(socket.itemCount()).toEqual(originalCount);
+				socket.flush();
 			});
 		});
 	});
