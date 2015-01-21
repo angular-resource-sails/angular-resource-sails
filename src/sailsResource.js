@@ -1,3 +1,5 @@
+io.sails.autoConnect = false;
+
 (function (angular) {
 
 	var forEach = angular.forEach,
@@ -15,9 +17,9 @@
 			prefix: '',
 			// When verbose, socket updates go to the console
 			verbose: false,
-			// Set a specific websocket, used for testing
+			// Set a specific websocket
 			socket: null,
-			// Set a specific origin, used for testing
+			// Set a specific origin
 			origin: null
 		};
 
@@ -54,8 +56,8 @@
 			socketError: '$sailsSocketError'
 		};
 
-		var origin = $window.location.origin;
-		var socket = $window.io.connect(origin);
+		var origin = config.origin || $window.location.origin;
+		var socket = config.socket || $window.io.sails.connect(origin);
 
 		socket.on('connect', function () {
 			$rootScope.$apply(function () {

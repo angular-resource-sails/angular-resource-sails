@@ -6,8 +6,10 @@ describe('multiple sailsResources', function() {
 		socket = mockSocket;
 
 		$window.io = {
-			connect: function () {
-				return mockSocket;
+			sails: {
+				connect: function () {
+					return mockSocket;
+				}
 			}
 		};
 	}));
