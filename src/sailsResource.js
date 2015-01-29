@@ -174,7 +174,7 @@ io.sails.autoConnect = false;
 				else {
 					// When we have no item, params is assumed to be the item data
 					if (!item) {
-						item = params;
+						item = new Resource(params);
 						params = {};
 					}
 
