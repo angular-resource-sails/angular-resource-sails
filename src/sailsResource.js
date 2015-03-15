@@ -188,14 +188,14 @@ io.sails.autoConnect = false;
 			}
 
 			// Handle a response
-			function handleResponse(item, data, action, deferred, delegate) {
+			function handleResponse(item, data, jwr, action, deferred, delegate) {
 				action = action || {};
 				$rootScope.$apply(function () {
 					item.$resolved = true;
 
-					if (data.error || data.statusCode > 400 || isString(data)) {
-						$log.error(data);
-						deferred.reject(data.error || data, item, data);
+					if (jwr.error || jwr.statusCode > 400 || isString(data)) {
+						$log.error(data, jwr);
+						deferred.reject(jwr.error || jwr, item, data);
 					}
 					else if (!isArray(item) && isArray(data) && data.length != 1) {
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
@@ -237,8 +237,8 @@ io.sails.autoConnect = false;
 					$log.info('sailsResource calling GET ' + url);
 				}
 
-				socket.get(url, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
+				socket.get(url, function (response, jwr) {
+					handleResponse(item, response, jwr, action, deferred, function (data) {
 						if (isArray(item)) { // empty the list and update with returned data
 							while (item.length) item.pop();
 							forEach(data, function (responseItem) {
@@ -282,9 +282,10 @@ io.sails.autoConnect = false;
 					$log.info('sailsResource calling ' + method.toUpperCase() + ' ' + url);
 				}
 
-				socket[method](url, data, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
+				socket[method](url, data, function (response, jwr) {
+					handleResponse(item, response, jwr, action, deferred, function (data) {
 						extend(item, data);
+						cache[item.id] = item;
 						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, {
 							model: model,
 							id: item.id,
@@ -293,7 +294,7 @@ io.sails.autoConnect = false;
 					});
 				});
 
-				return item.$promise;
+				return item;
 			}
 
 			// Request handler function for DELETEs
@@ -304,8 +305,8 @@ io.sails.autoConnect = false;
 				if (options.verbose) {
 					$log.info('sailsResource calling DELETE ' + url);
 				}
-				socket.delete(url, function (response) {
-					handleResponse(item, response, action, deferred, function () {
+				socket.delete(url, function (response, jwr) {
+					handleResponse(item, response, jwr, action, deferred, function () {
 						removeFromCache(item.id);
 						$rootScope.$broadcast(MESSAGES.destroyed, {model: model, id: item.id});
 						// leave local instance unmodified
