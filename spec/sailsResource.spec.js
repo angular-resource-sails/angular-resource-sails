@@ -6,11 +6,7 @@ describe('sailsResource >', function () {
 	beforeEach(inject(function (mockSocket, $window) {
 		socket = mockSocket;
 		$window.io = {
-			sails: {
-				connect: function () {
-					return mockSocket;
-				}
-			}
+			socket: mockSocket
 		};
 	}));
 

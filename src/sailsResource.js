@@ -1,4 +1,4 @@
-io.sails.autoConnect = false;
+//io.sails.autoConnect = false;
 
 (function (angular) {
 
@@ -18,9 +18,9 @@ io.sails.autoConnect = false;
 			// When verbose, socket updates go to the console
 			verbose: false,
 			// Set a specific websocket
-			socket: null,
+			socket: null
 			// Set a specific origin
-			origin: null
+			//origin: null
 		};
 
 		this.configuration = {};
@@ -56,8 +56,8 @@ io.sails.autoConnect = false;
 			socketError: '$sailsSocketError'
 		};
 
-		var origin = config.origin || $window.location.origin;
-		var socket = config.socket || $window.io.sails.connect(origin);
+		//var origin = config.origin || $window.location.origin;
+		var socket = config.socket || $window.io.socket; //.sails.connect(origin);
 
 		socket.on('connect', function () {
 			$rootScope.$apply(function () {
