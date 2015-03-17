@@ -9,7 +9,10 @@
 	"ignore": [
 		"**/.*",
 		"bower_components",
+	  	"node_modules",
 		"spec",
+	  	"e2e",
+	  	"example",
 		"package.json"
 	],
 	"dependencies": {
