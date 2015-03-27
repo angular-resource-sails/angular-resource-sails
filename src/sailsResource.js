@@ -179,15 +179,15 @@
 						params = {};
 					}
 
-                    var retVal;
+					var retVal;
 					if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
-                        retVal = createOrUpdateResource(item, params, action, success, error);
+						retVal = createOrUpdateResource(item, params, action, success, error);
 					}
 					else if (action.method == 'DELETE') { // Delete individual instance of model
-                        retVal = deleteResource(item, params, action, success, error);
+						retVal = deleteResource(item, params, action, success, error);
 					}
-                    delete item.$nonInstanceCall;
-                    return retVal;
+					delete item.$nonInstanceCall;
+					return retVal;
 				}
 			}
 
@@ -298,9 +298,9 @@
 					});
 				});
 
-                if (item.$nonInstanceCall) {
-                    return item;
-                }
+				if (item.$nonInstanceCall) {
+					return item;
+				}
 
                 return item.$promise;
 			}
