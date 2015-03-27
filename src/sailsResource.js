@@ -175,7 +175,7 @@
 					// When we have no item, params is assumed to be the item data
 					if (!item) {
 						item = new Resource(params);
-                        item.$nonInstanceCall = true;
+						item.$nonInstanceCall = true;
 						params = {};
 					}
 
@@ -302,7 +302,7 @@
 					return item;
 				}
 
-                return item.$promise;
+				return item.$promise;
 			}
 
 			// Request handler function for DELETEs
