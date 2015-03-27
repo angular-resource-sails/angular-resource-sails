@@ -481,7 +481,7 @@ io.sails.autoConnect = false;
 		else {
 			url.push(options.prefix);
 			url.push('/');
-			url.push(model);
+			url.push(model + (options.pluralize ? "s" : ""));
 			if (id) url.push('/' + id);
 		}
 		url.push(createQueryString(params));
