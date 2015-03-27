@@ -175,15 +175,19 @@
 					// When we have no item, params is assumed to be the item data
 					if (!item) {
 						item = new Resource(params);
+                        item.$nonInstanceCall = true;
 						params = {};
 					}
 
+                    var retVal;
 					if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
-						return createOrUpdateResource(item, params, action, success, error);
+                        retVal = createOrUpdateResource(item, params, action, success, error);
 					}
 					else if (action.method == 'DELETE') { // Delete individual instance of model
-						return deleteResource(item, params, action, success, error);
+                        retVal = deleteResource(item, params, action, success, error);
 					}
+                    delete item.$nonInstanceCall;
+                    return retVal;
 				}
 			}
 
@@ -294,7 +298,11 @@
 					});
 				});
 
-				return item;
+                if (item.$nonInstanceCall) {
+                    return item;
+                }
+
+                return item.$promise;
 			}
 
 			// Request handler function for DELETEs
