@@ -116,7 +116,8 @@ We've included a few useful options you can enable on any sailsResource.
 var service = sailsResource('item', {}, {
 		verbose: true, // sailsResource will log messages to console
 		prefix: 'myapi', // apply a prefix to all routes
-		socket: socketInstance // provide your own socket instance
+		socket: socketInstance // provide your own socket instance,
+		origin: 'http://notlocalhost.com' // change the socket origin
 	}
 };
 ```

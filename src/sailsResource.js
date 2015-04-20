@@ -1,5 +1,3 @@
-//io.sails.autoConnect = false;
-
 (function (angular) {
 
 	var forEach = angular.forEach,
@@ -18,9 +16,9 @@
 			// When verbose, socket updates go to the console
 			verbose: false,
 			// Set a specific websocket
-			socket: null
+			socket: null,
 			// Set a specific origin
-			//origin: null
+			origin: null
 		};
 
 		this.configuration = {};
@@ -56,48 +54,6 @@
 			socketError: '$sailsSocketError'
 		};
 
-		//var origin = config.origin || $window.location.origin;
-		var socket = config.socket || $window.io.socket; //.sails.connect(origin);
-
-		socket.on('connect', function () {
-			$rootScope.$apply(function () {
-				$rootScope.$broadcast(MESSAGES.connected);
-			});
-		});
-
-		socket.on('disconnect', function () {
-			$rootScope.$apply(function () {
-				$rootScope.$broadcast(MESSAGES.disconnected);
-			});
-		});
-
-		socket.on('reconnect', function () {
-			$rootScope.$apply(function () {
-				$rootScope.$broadcast(MESSAGES.reconnected);
-			});
-		});
-
-		socket.on('reconnecting', function (timeDisconnected, reconnectCount) {
-			$rootScope.$apply(function () {
-				$rootScope.$broadcast(MESSAGES.reconnecting, {
-					timeDisconnected: timeDisconnected,
-					reconnectCount: reconnectCount
-				});
-			});
-		});
-
-		socket.on('error', function (error) {
-			$rootScope.$apply(function () {
-				$rootScope.$broadcast(MESSAGES.socketError, error);
-			});
-		});
-
-		$window.onbeforeunload = function () {
-			if (socket) {
-				socket.disconnect();
-			}
-		};
-
 		return function (model, actions, options) {
 
 			if (typeof model != 'string' || model.length == 0) {
@@ -112,6 +68,61 @@
 			if (options.prefix && options.prefix.charAt(0) != '/') {
 				options.prefix = '/' + options.prefix;
 			}
+
+			// Create our socket instance based on options
+
+			var socket;
+			if(options.socket) { // Was given to us
+				socket = options.socket;
+			}
+			else if(options.origin) { // A custom origin
+				socket = $window.io.sails.connect(options.origin);
+			}
+			else { // Default: use base socket
+				socket = $window.io.socket;
+			}
+
+			// Setup socket default messages
+
+			socket.on('connect', function () {
+				$rootScope.$apply(function () {
+					$rootScope.$broadcast(MESSAGES.connected);
+				});
+			});
+
+			socket.on('disconnect', function () {
+				$rootScope.$apply(function () {
+					$rootScope.$broadcast(MESSAGES.disconnected);
+				});
+			});
+
+			socket.on('reconnect', function () {
+				$rootScope.$apply(function () {
+					$rootScope.$broadcast(MESSAGES.reconnected);
+				});
+			});
+
+			socket.on('reconnecting', function (timeDisconnected, reconnectCount) {
+				$rootScope.$apply(function () {
+					$rootScope.$broadcast(MESSAGES.reconnecting, {
+						timeDisconnected: timeDisconnected,
+						reconnectCount: reconnectCount
+					});
+				});
+			});
+
+			socket.on('error', function (error) {
+				$rootScope.$apply(function () {
+					$rootScope.$broadcast(MESSAGES.socketError, error);
+				});
+			});
+
+			// Disconnect socket when window unloads
+			$window.onbeforeunload = function () {
+				if (socket) {
+					socket.disconnect();
+				}
+			};
 
 			// Caching
 			var cache = {};
@@ -214,6 +225,13 @@
 						// converting single array to single item
 						if (!isArray(item) && isArray(data)) data = data[0];
 
+						if (isArray(action.transformResponse)) {
+							forEach(action.transformResponse, function(transformResponse) {
+								if (isFunction(action.transformResponse)) {
+									data = action.transformResponse(data);
+								}
+							})
+						}
 						if (isFunction(action.transformResponse)) data = action.transformResponse(data);
 						if (isFunction(delegate)) delegate(data);
 						deferred.resolve(item);
