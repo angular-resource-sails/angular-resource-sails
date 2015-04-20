@@ -221,6 +221,13 @@
 						// converting single array to single item
 						if (!isArray(item) && isArray(data)) data = data[0];
 
+						if (isArray(action.transformResponse)) {
+							forEach(action.transformResponse, function(transformResponse) {
+								if (isFunction(action.transformResponse)) {
+									data = action.transformResponse(data);
+								}
+							})
+						}
 						if (isFunction(action.transformResponse)) data = action.transformResponse(data);
 						if (isFunction(delegate)) delegate(data);
 						deferred.resolve(item);
