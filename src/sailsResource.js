@@ -223,8 +223,8 @@
 
 						if (isArray(action.transformResponse)) {
 							forEach(action.transformResponse, function(transformResponse) {
-								if (isFunction(action.transformResponse)) {
-									data = action.transformResponse(data);
+								if (isFunction(transformResponse)) {
+									data = transformResponse(data);
 								}
 							})
 						}
