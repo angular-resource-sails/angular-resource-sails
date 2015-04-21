@@ -307,12 +307,15 @@
 				socket[method](url, data, function (response, jwr) {
 					handleResponse(item, response, jwr, action, deferred, function (data) {
 						extend(item, data);
-						cache[item.id] = item;
-						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, {
+						var message = {
 							model: model,
 							id: item.id,
 							data: item
-						});
+						};
+						var cacheUpdater = (method === 'put') ? socketUpdateResource : socketCreateResource;
+						var messageName = (method === 'put') ? MESSAGES.updated : MESSAGES.created;
+						cacheUpdater(message);
+						$rootScope.$broadcast(messageName, message);
 					});
 				});
 
