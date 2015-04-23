@@ -13,7 +13,7 @@ exports.config = {
 	sauceKey: process.env.SAUCE_ACCESS_KEY,
 	capabilities: {
 		'browserName': 'chrome',
-		'platform': 'Windows 7',
+		'platform': 'WINDOWS',
 		'tunnel-identifier': process.env.TRAVIS_JOB_NUMBER,
 		'build': process.env.TRAVIS_BUILD_NUMBER,
 		'name': 'angular-resource-sails realtime integration'
