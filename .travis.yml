@@ -8,3 +8,5 @@ env:
   - secure: bfOObptzg9vHOr5Gm1qrKwd2AppjG9kvWUp7SiG9l2VHZK4FK+1K5Yax2K2EL1qZHuksT3HesgBt1qC1njLEhdVxDmNDTpZxTaTxVYCq/GFgtC1989uHibPIf7qJqPAASfoTrBLON1UY20XXFv6ygpmm6IKFK4b+APy6koWGKuQ=
 addons:
   sauce_connect: true
+script:
+  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && bundle exec rake tests:integration || false'
