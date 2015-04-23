@@ -296,11 +296,22 @@
 				socket[method](url, data, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						extend(item, data);
-						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, {
+						var message = {
 							model: model,
 							id: item.id,
 							data: item
-						});
+						};
+						if (method === 'put') {
+							// Update cache
+							socketUpdateResource(message);
+							// Emit event
+							$rootScope.$broadcast(MESSAGES.updated, message);
+						} else {
+							// Update cache
+							socketCreateResource(message);
+							// Emit event
+							$rootScope.$broadcast(MESSAGES.created, message);
+						}
 					});
 				});
 
