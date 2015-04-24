@@ -186,27 +186,31 @@
 					// When we have no item, params is assumed to be the item data
 					if (!item) {
 						item = new Resource(params);
+						item.$nonInstanceCall = true;
 						params = {};
 					}
 
+					var retVal;
 					if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
-						return createOrUpdateResource(item, params, action, success, error);
+						retVal = createOrUpdateResource(item, params, action, success, error);
 					}
 					else if (action.method == 'DELETE') { // Delete individual instance of model
-						return deleteResource(item, params, action, success, error);
+						retVal = deleteResource(item, params, action, success, error);
 					}
+					delete item.$nonInstanceCall;
+					return retVal;
 				}
 			}
 
 			// Handle a response
-			function handleResponse(item, data, action, deferred, delegate) {
+			function handleResponse(item, data, jwr, action, deferred, delegate) {
 				action = action || {};
 				$rootScope.$apply(function () {
 					item.$resolved = true;
 
-					if (data.error || data.statusCode > 400 || isString(data)) {
-						$log.error(data);
-						deferred.reject(data.error || data, item, data);
+					if (jwr.error || jwr.statusCode > 400 || isString(data)) {
+						$log.error(data, jwr);
+						deferred.reject(jwr.error || jwr, item, data);
 					}
 					else if (!isArray(item) && isArray(data) && data.length != 1) {
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
@@ -255,8 +259,8 @@
 					$log.info('sailsResource calling GET ' + url);
 				}
 
-				socket.get(url, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
+				socket.get(url, function (response, jwr) {
+					handleResponse(item, response, jwr, action, deferred, function (data) {
 						if (isArray(item)) { // empty the list and update with returned data
 							while (item.length) item.pop();
 							forEach(data, function (responseItem) {
@@ -300,16 +304,24 @@
 					$log.info('sailsResource calling ' + method.toUpperCase() + ' ' + url);
 				}
 
-				socket[method](url, data, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
+				socket[method](url, data, function (response, jwr) {
+					handleResponse(item, response, jwr, action, deferred, function (data) {
 						extend(item, data);
-						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, {
+						var message = {
 							model: model,
 							id: item.id,
 							data: item
-						});
+						};
+						var cacheUpdater = (method === 'put') ? socketUpdateResource : socketCreateResource;
+						var messageName = (method === 'put') ? MESSAGES.updated : MESSAGES.created;
+						cacheUpdater(message);
+						$rootScope.$broadcast(messageName, message);
 					});
 				});
+
+				if (item.$nonInstanceCall) {
+					return item;
+				}
 
 				return item.$promise;
 			}
@@ -322,8 +334,8 @@
 				if (options.verbose) {
 					$log.info('sailsResource calling DELETE ' + url);
 				}
-				socket.delete(url, function (response) {
-					handleResponse(item, response, action, deferred, function () {
+				socket.delete(url, function (response, jwr) {
+					handleResponse(item, response, jwr, action, deferred, function () {
 						removeFromCache(item.id);
 						$rootScope.$broadcast(MESSAGES.destroyed, {model: model, id: item.id});
 						// leave local instance unmodified
@@ -498,7 +510,7 @@
 		else {
 			url.push(options.prefix);
 			url.push('/');
-			url.push(model);
+			url.push(model + (options.pluralize ? "s" : ""));
 			if (id) url.push('/' + id);
 		}
 		url.push(createQueryString(params));
