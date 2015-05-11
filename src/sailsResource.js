@@ -18,7 +18,9 @@
 			// Set a specific websocket
 			socket: null,
 			// Set a specific origin
-			origin: null
+			origin: null,
+			// Set resource primary key
+			primaryKey: 'id'
 		};
 
 		this.configuration = {};
@@ -135,7 +137,7 @@
 					if (isArray(cacheItem)) {
 						var foundIndex = null;
 						forEach(cacheItem, function (item, index) {
-							if (item.id == id) {
+							if (item[options.primaryKey] == id) {
 								foundIndex = index;
 							}
 						});
@@ -169,14 +171,16 @@
 					// 2) action uses a custom url (Sails only sends updates to ids) OR
 					// 3) the resource is an individual item without an id (Sails only sends updates to ids)
 
-					if (!action.cache || action.url || (!action.isArray && (!params || !params.id))) { // uncached
+					if (!action.cache || action.url || (!action.isArray && (!params || !params[options.primaryKey]))) { // uncached
 						item = action.isArray ? [] : new Resource();
 					}
 					else {
 						// cache key is 1) stringified params for lists or 2) id for individual items
-						var key = action.isArray ? JSON.stringify(params || {}) : params.id;
+						var key = action.isArray ? JSON.stringify(params || {}) : params[options.primaryKey];
 						// pull out of cache if available, otherwise create new instance
-						item = cache[key] || (action.isArray ? [] : new Resource({id: key}));
+						item = cache[key] || (action.isArray ? []
+								// Set key on object using options.primaryKey
+								: (function(){ var tmp = {}; tmp[options.primaryKey] = key; return new Resource(tmp) })());
 						cache[key] = item; // store item in cache
 					}
 
@@ -248,7 +252,7 @@
 			function retrieveResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
 
-				var url = buildUrl(model, params ? params.id : null, action, params, options);
+				var url = buildUrl(model, params ? params[options.primaryKey] : null, action, params, options);
 				item.$retrieveUrl = url;
 
 				if (options.verbose) {
@@ -269,8 +273,8 @@
 							extend(item, data); // update item
 
 							// If item is not in the cache based on its id, add it now
-							if (!cache[item.id]) {
-								cache[item.id] = item;
+							if (!cache[ item[ options.primaryKey ] ]) {
+								cache[ item[ options.primaryKey ] ] = item;
 							}
 						}
 					});
@@ -291,10 +295,10 @@
 				// prevents prototype functions being sent
 				var data = copyAndClear(transformedData || item, {});
 
-				var url = buildUrl(model, data.id, action, params, options);
+				var url = buildUrl(model, data[options.primaryKey], action, params, options);
 
 				// when Resource has id use PUT, otherwise use POST
-				var method = item.id ? 'put' : 'post';
+				var method = item[options.primaryKey] ? 'put' : 'post';
 
 				if (options.verbose) {
 					$log.info('sailsResource calling ' + method.toUpperCase() + ' ' + url);
@@ -303,11 +307,13 @@
 				socket[method](url, data, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						extend(item, data);
-						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, {
+						var tmp = {
 							model: model,
-							id: item.id,
 							data: item
-						});
+						};
+						tmp[options.primaryKey] = item[options.primaryKey];
+
+						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, tmp);
 					});
 				});
 
@@ -317,15 +323,17 @@
 			// Request handler function for DELETEs
 			function deleteResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
-				var url = buildUrl(model, item.id, action, params, options);
+				var url = buildUrl(model, item[options.primaryKey], action, params, options);
 
 				if (options.verbose) {
 					$log.info('sailsResource calling DELETE ' + url);
 				}
 				socket.delete(url, function (response) {
 					handleResponse(item, response, action, deferred, function () {
-						removeFromCache(item.id);
-						$rootScope.$broadcast(MESSAGES.destroyed, {model: model, id: item.id});
+						removeFromCache(item[options.primaryKey]);
+						var tmp = {model: model};
+						tmp[options.primaryKey] = item[options.primaryKey];
+						$rootScope.$broadcast(MESSAGES.destroyed, tmp);
 						// leave local instance unmodified
 					});
 				});
@@ -337,9 +345,11 @@
 				forEach(cache, function (cacheItem, key) {
 					if (isArray(cacheItem)) {
 						forEach(cacheItem, function (item) {
-							if (item.id == message.id) {
+							if (item[options.primaryKey] == message[options.primaryKey]) {
 								if (needsPopulate(message.data, item)) { // go to server for updated data
-									retrieveResource(item, {id: item.id});
+									var tmp = {};
+									tmp[options.primaryKey] = item[options.primaryKey];
+									retrieveResource(item, tmp);
 								}
 								else {
 									extend(item, message.data);
@@ -347,9 +357,11 @@
 							}
 						});
 					}
-					else if (key == message.id) {
+					else if (key == message[options.primaryKey]) {
 						if (needsPopulate(message.data, cacheItem)) { // go to server for updated data
-							retrieveResource(cacheItem, {id: cacheItem.id});
+							var tmp = {};
+							tmp[options.primaryKey] = cacheItem[options.primaryKey];
+							retrieveResource(cacheItem, tmp);
 						}
 						else {
 							extend(cacheItem, message.data);
@@ -359,7 +371,7 @@
 			}
 
 			function socketCreateResource(message) {
-				cache[message.id] = new Resource(message.data);
+				cache[message[options.primaryKey]] = new Resource(message.data);
 				// when a new item is created we have no way of knowing if it belongs in a cached list,
 				// this necessitates doing a server fetch on all known lists
 				// TODO does this make sense?
@@ -371,7 +383,7 @@
 			}
 
 			function socketDeleteResource(message) {
-				removeFromCache(message.id);
+				removeFromCache(message[options.primaryKey]);
 			}
 
 			// Add each action to the Resource and/or its prototype
@@ -489,7 +501,7 @@
 			if (matches) {
 				forEach(matches, function (match) {
 					var paramName = match.replace(':', '');
-					actionUrl = actionUrl.replace(match, paramName == 'id' ? id : params[paramName]);
+					actionUrl = actionUrl.replace(match, paramName == options.primaryKey ? id : params[paramName]);
 				});
 			}
 
@@ -501,19 +513,20 @@
 			url.push(model);
 			if (id) url.push('/' + id);
 		}
-		url.push(createQueryString(params));
+		url.push(createQueryString(params, options));
 		return url.join('');
 	}
 
 	/**
 	 * Create a query-string out of a set of parameters.
 	 */
-	function createQueryString(params) {
+	function createQueryString(params, options) {
+		options = options || {primaryKey: 'id'};
 		var qs = [];
 		if (params) {
 			qs.push('?');
 			forEach(params, function (value, key) {
-				if (key == 'id') return;
+				if (key == options.primaryKey) return;
 				qs.push(key + '=' + value);
 				qs.push('&');
 			});
