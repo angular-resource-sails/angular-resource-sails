@@ -289,7 +289,8 @@
 				// prep data
 				var transformedData;
 				if (isFunction(action.transformRequest)) {
-					transformedData = JSON.parse(action.transformRequest(item));
+					var tmp = action.transformRequest(item);
+					transformedData = typeof tmp === 'object' ? tmp : JSON.parse(tmp);
 				}
 
 				// prevents prototype functions being sent
