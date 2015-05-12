@@ -153,6 +153,10 @@
 				copy(value || {}, this);
 			}
 
+			function mergeParams(params, actionParams) {
+				return extend({}, actionParams || {}, params || {});
+			}
+
 			// Handle a request
 			// Does a small amount of preparation of data and directs to the appropriate request handler
 			function handleRequest(item, params, action, success, error) {
@@ -164,19 +168,24 @@
 					params = {};
 				}
 
+
+				var instanceParams,
+					actionParams = action && typeof action.params === 'object' ? action.params : {};
 				if (action.method == 'GET') {
+
+					instanceParams = mergeParams(params, actionParams);
 
 					// Do not cache if:
 					// 1) action is set to cache=false (the default is true) OR
 					// 2) action uses a custom url (Sails only sends updates to ids) OR
 					// 3) the resource is an individual item without an id (Sails only sends updates to ids)
 
-					if (!action.cache || action.url || (!action.isArray && (!params || !params[options.primaryKey]))) { // uncached
+					if (!action.cache || action.url || (!action.isArray && (!instanceParams || !instanceParams[options.primaryKey]))) { // uncached
 						item = action.isArray ? [] : new Resource();
 					}
 					else {
 						// cache key is 1) stringified params for lists or 2) id for individual items
-						var key = action.isArray ? JSON.stringify(params || {}) : params[options.primaryKey];
+						var key = action.isArray ? JSON.stringify(instanceParams || {}) : instanceParams[options.primaryKey];
 						// pull out of cache if available, otherwise create new instance
 						item = cache[key] || (action.isArray ? []
 								// Set key on object using options.primaryKey
@@ -184,7 +193,7 @@
 						cache[key] = item; // store item in cache
 					}
 
-					return retrieveResource(item, params, action, success, error);
+					return retrieveResource(item, instanceParams, action, success, error);
 				}
 				else {
 					// When we have no item, params is assumed to be the item data
@@ -193,11 +202,13 @@
 						params = {};
 					}
 
+					instanceParams = mergeParams(params, actionParams);
+
 					if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
-						return createOrUpdateResource(item, params, action, success, error);
+						return createOrUpdateResource(item, instanceParams, action, success, error);
 					}
 					else if (action.method == 'DELETE') { // Delete individual instance of model
-						return deleteResource(item, params, action, success, error);
+						return deleteResource(item, instanceParams, action, success, error);
 					}
 				}
 			}
@@ -528,7 +539,7 @@
 			qs.push('?');
 			forEach(params, function (value, key) {
 				if (key == options.primaryKey) return;
-				qs.push(key + '=' + value);
+				qs.push(key + '=' + (typeof value === 'object' && value !== null ? JSON.stringify(value) : value));
 				qs.push('&');
 			});
 			qs.pop(); // remove last &
