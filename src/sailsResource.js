@@ -245,15 +245,32 @@
 						}
 						if (isFunction(action.transformResponse)) data = action.transformResponse(data);
 						if (isFunction(delegate)) delegate(data);
-						deferred.resolve(item);
+						
+						// 1) Internally resolve with both item and header getter
+						// for pass'em to explicit success handler
+						// 2) In attachPromise() cut off header getter, so that
+						// implicit success handlers receive only item
+						deferred.resolve({
+							item: item,
+							getHeaderFn: function(name) { return jwr && jwr.headers && jwr.headers[name]; }
+						});
 					}
 				});
 			}
 
 			function attachPromise(item, success, error) {
 				var deferred = $q.defer();
-				item.$promise = deferred.promise;
-				item.$promise.then(success);
+				item.$promise = deferred.promise.then(function(result) {
+					// Like in ngResource explicit success handler
+					// (passed directly as an argument of action call)
+					// receives two arguments:
+					// 1) item and 2) header getter function.
+					(success || angular.noop)(result.item, result.getHeaderFn);
+
+					// Implicit success handlers (bound via Promise API, .then())
+					// receive only item argument
+					return $q.when(result.item);
+				});
 				item.$promise.catch(error);
 				item.$resolved = false;
 				return deferred;
