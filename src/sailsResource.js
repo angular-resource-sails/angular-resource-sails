@@ -529,37 +529,27 @@
 		return url.join('');
 	}
 
-	/**
-	 * Create a query-string out of a set of parameters, similar to way AngularJS does (as of 1.3.15)
-	 * @see https://github.com/angular/angular.js/commit/6c8464ad14dd308349f632245c1a064c9aae242a#diff-748e0a1e1a7db3458d5f95d59d7e16c9L1142
-	 */
-	function createQueryString(params) {
-		if (!params) { return ''; }
+    /**
+     * Create a query-string out of a set of parameters, similar to way AngularJS does (as of 1.3.15)
+     * @see https://github.com/angular/angular.js/commit/6c8464ad14dd308349f632245c1a064c9aae242a#diff-748e0a1e1a7db3458d5f95d59d7e16c9L1142
+     */
+    function createQueryString(params) {
+        if (!params) { return ''; }
 
-		var parts = [];
-		Object.keys(params).sort().forEach(function(key) {
-			var value = params[key];
-			if (key === 'id') { return; }
-			if (value === null || value === undefined) { return; }
-			if (!Array.isArray(value)) { value = [value]; }
-			value.forEach(function(v) {
-				if (angular.isObject(v)) {
-					v = angular.isDate(v) ? v.toISOString() : angular.toJson(v);
-				}
-				parts.push(encodeUriQuery(key) + '=' + encodeUriQuery(v));
-			});
-		});
-		return parts.length ? '?' + parts.join('&') : '';
-	}
-
-	function encodeUriQuery(val, pctEncodeSpaces) {
-		return encodeURIComponent(val).
-			replace(/%40/gi, '@').
-			replace(/%3A/gi, ':').
-			replace(/%24/g, '$').
-			replace(/%2C/gi, ',').
-			replace(/%3B/gi, ';').
-			replace(/%20/g, (pctEncodeSpaces ? '%20' : '+'));
-	}
+        var parts = [];
+        Object.keys(params).sort().forEach(function(key) {
+            var value = params[key];
+            if (key === 'id') { return; }
+            if (value === null || value === undefined) { return; }
+            if (!Array.isArray(value)) { value = [value]; }
+            value.forEach(function(v) {
+                if (angular.isObject(v)) {
+                    v = angular.isDate(v) ? v.toISOString() : angular.toJson(v);
+                }
+                parts.push(key + '=' + v);
+            });
+        });
+        return parts.length ? '?' + parts.join('&') : '';
+    }
 
 })(window.angular);
