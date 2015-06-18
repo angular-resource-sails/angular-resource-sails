@@ -549,7 +549,7 @@
 				parts.push(encodeUriQuery(key) + '=' + encodeUriQuery(v));
 			});
 		});
-		return parts.length ? '?' + parts.join('&');
+		return parts.length ? '?' + parts.join('&') : '';
 	}
 
 	function encodeUriQuery(val, pctEncodeSpaces) {
