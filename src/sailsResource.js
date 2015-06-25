@@ -547,21 +547,27 @@
 	}
 
 	/**
-	 * Create a query-string out of a set of parameters.
+	 * Create a query-string out of a set of parameters, similar to way AngularJS does (as of 1.3.15)
+	 * @see https://github.com/angular/angular.js/commit/6c8464ad14dd308349f632245c1a064c9aae242a#diff-748e0a1e1a7db3458d5f95d59d7e16c9L1142
 	 */
-	function createQueryString(params, options) {
-		options = options || {primaryKey: 'id'};
-		var qs = [];
-		if (params) {
-			qs.push('?');
-			forEach(params, function (value, key) {
-				if (key == options.primaryKey) return;
-				qs.push(key + '=' + (typeof value === 'object' && value !== null ? JSON.stringify(value) : value));
-				qs.push('&');
+	function createQueryString(params) {
+		if (!params) { return ''; }
+
+		var parts = [];
+		Object.keys(params).sort().forEach(function(key) {
+			var value = params[key];
+			if (key === 'id') { return; }
+			if (value === null || value === undefined) { return; }
+			if (!Array.isArray(value)) { value = [value]; }
+			value.forEach(function(v) {
+				if (angular.isObject(v)) {
+					v = angular.isDate(v) ? v.toISOString() : angular.toJson(v);
+				}
+				parts.push(key + '=' + v);
 			});
-			qs.pop(); // remove last &
-		}
-		return qs.join('');
+		});
+		return parts.length ? '?' + parts.join('&') : '';
 	}
+
 
 })(window.angular);
