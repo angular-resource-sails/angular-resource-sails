@@ -219,7 +219,7 @@
 				$rootScope.$apply(function () {
 					item.$resolved = true;
 
-					if (data.error || data.statusCode > 400 || isString(data)) {
+					if (data && (data.error || data.statusCode > 400)) {
 						$log.error(data);
 						deferred.reject(data.error || data, item, data);
 					}
