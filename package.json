@@ -3,14 +3,14 @@
   "version": "1.1.6",
   "private": false,
   "description": "Angular $resource style service for accessing sails socket.io resources",
-  "main": "",
+  "main": "src/sailsResource.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/xjpro/angular-resource-sails.git"
   },
   "scripts": {
-    "postinstall": "node node_modules/bower/bin/bower install && cd example && npm install",
-    "test": "npm run unit-tests && npm run integration-tests",
+    "install": "node_modules/.bin/bower install",
+    "test": "cd example && npm install && cd .. && npm run unit-tests && npm run integration-tests",
     "unit-tests": "node node_modules/karma/bin/karma start --browsers PhantomJS --single-run",
     "integration-tests": "node node_modules/gulp/bin/gulp.js protractor"
   },
