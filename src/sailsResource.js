@@ -18,7 +18,9 @@
 			// Set a specific websocket
 			socket: null,
 			// Set a specific origin
-			origin: null
+			origin: null,
+			// Set resource primary key
+			primaryKey: 'id'
 		};
 
 		this.configuration = {};
@@ -135,7 +137,7 @@
 					if (isArray(cacheItem)) {
 						var foundIndex = null;
 						forEach(cacheItem, function (item, index) {
-							if (item.id == id) {
+							if (item[options.primaryKey] == id) {
 								foundIndex = index;
 							}
 						});
@@ -151,6 +153,10 @@
 				copy(value || {}, this);
 			}
 
+			function mergeParams(params, actionParams) {
+				return extend({}, actionParams || {}, params || {});
+			}
+
 			// Handle a request
 			// Does a small amount of preparation of data and directs to the appropriate request handler
 			function handleRequest(item, params, action, success, error) {
@@ -162,25 +168,32 @@
 					params = {};
 				}
 
+
+				var instanceParams,
+					actionParams = action && typeof action.params === 'object' ? action.params : {};
 				if (action.method == 'GET') {
+
+					instanceParams = mergeParams(params, actionParams);
 
 					// Do not cache if:
 					// 1) action is set to cache=false (the default is true) OR
 					// 2) action uses a custom url (Sails only sends updates to ids) OR
 					// 3) the resource is an individual item without an id (Sails only sends updates to ids)
 
-					if (!action.cache || action.url || (!action.isArray && (!params || !params.id))) { // uncached
+					if (!action.cache || action.url || (!action.isArray && (!instanceParams || !instanceParams[options.primaryKey]))) { // uncached
 						item = action.isArray ? [] : new Resource();
 					}
 					else {
 						// cache key is 1) stringified params for lists or 2) id for individual items
-						var key = action.isArray ? JSON.stringify(params || {}) : params.id;
+						var key = action.isArray ? JSON.stringify(instanceParams || {}) : instanceParams[options.primaryKey];
 						// pull out of cache if available, otherwise create new instance
-						item = cache[key] || (action.isArray ? [] : new Resource({id: key}));
+						item = cache[key] || (action.isArray ? []
+								// Set key on object using options.primaryKey
+								: (function(){ var tmp = {}; tmp[options.primaryKey] = key; return new Resource(tmp) })());
 						cache[key] = item; // store item in cache
 					}
 
-					return retrieveResource(item, params, action, success, error);
+					return retrieveResource(item, instanceParams, action, success, error);
 				}
 				else {
 					// When we have no item, params is assumed to be the item data
@@ -189,11 +202,13 @@
 						params = {};
 					}
 
+					instanceParams = mergeParams(params, actionParams);
+
 					if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
-						return createOrUpdateResource(item, params, action, success, error);
+						return createOrUpdateResource(item, instanceParams, action, success, error);
 					}
 					else if (action.method == 'DELETE') { // Delete individual instance of model
-						return deleteResource(item, params, action, success, error);
+						return deleteResource(item, instanceParams, action, success, error);
 					}
 				}
 			}
@@ -204,7 +219,7 @@
 				$rootScope.$apply(function () {
 					item.$resolved = true;
 
-					if (data.error || data.statusCode > 400 || isString(data)) {
+					if (data && (data.error || data.statusCode > 400)) {
 						$log.error(data);
 						deferred.reject(data.error || data, item, data);
 					}
@@ -221,17 +236,41 @@
 						// converting single array to single item
 						if (!isArray(item) && isArray(data)) data = data[0];
 
+						if (isArray(action.transformResponse)) {
+							forEach(action.transformResponse, function(transformResponse) {
+								if (isFunction(transformResponse)) {
+									data = transformResponse(data);
+								}
+							})
+						}
 						if (isFunction(action.transformResponse)) data = action.transformResponse(data);
 						if (isFunction(delegate)) delegate(data);
-						deferred.resolve(item);
+						
+						// 1) Internally resolve with both item and header getter
+						// for pass'em to explicit success handler
+						// 2) In attachPromise() cut off header getter, so that
+						// implicit success handlers receive only item
+						deferred.resolve({
+							item: item,
+							getHeaderFn: function(name) { return jwr && jwr.headers && jwr.headers[name]; }
+						});
 					}
 				});
 			}
 
 			function attachPromise(item, success, error) {
 				var deferred = $q.defer();
-				item.$promise = deferred.promise;
-				item.$promise.then(success);
+				item.$promise = deferred.promise.then(function(result) {
+					// Like in ngResource explicit success handler
+					// (passed directly as an argument of action call)
+					// receives two arguments:
+					// 1) item and 2) header getter function.
+					(success || angular.noop)(result.item, result.getHeaderFn);
+
+					// Implicit success handlers (bound via Promise API, .then())
+					// receive only item argument
+					return $q.when(result.item);
+				});
 				item.$promise.catch(error);
 				item.$resolved = false;
 				return deferred;
@@ -241,7 +280,7 @@
 			function retrieveResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
 
-				var url = buildUrl(model, params ? params.id : null, action, params, options);
+				var url = buildUrl(model, params ? params[options.primaryKey] : null, action, params, options);
 				item.$retrieveUrl = url;
 
 				if (options.verbose) {
@@ -262,8 +301,8 @@
 							extend(item, data); // update item
 
 							// If item is not in the cache based on its id, add it now
-							if (!cache[item.id]) {
-								cache[item.id] = item;
+							if (!cache[ item[ options.primaryKey ] ]) {
+								cache[ item[ options.primaryKey ] ] = item;
 							}
 						}
 					});
@@ -278,16 +317,17 @@
 				// prep data
 				var transformedData;
 				if (isFunction(action.transformRequest)) {
-					transformedData = JSON.parse(action.transformRequest(item));
+					var tmp = action.transformRequest(item);
+					transformedData = typeof tmp === 'object' ? tmp : JSON.parse(tmp);
 				}
 
 				// prevents prototype functions being sent
 				var data = copyAndClear(transformedData || item, {});
 
-				var url = buildUrl(model, data.id, action, params, options);
+				var url = buildUrl(model, data[options.primaryKey], action, params, options);
 
 				// when Resource has id use PUT, otherwise use POST
-				var method = item.id ? 'put' : 'post';
+				var method = item[options.primaryKey] ? 'put' : 'post';
 
 				if (options.verbose) {
 					$log.info('sailsResource calling ' + method.toUpperCase() + ' ' + url);
@@ -296,11 +336,13 @@
 				socket[method](url, data, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						extend(item, data);
+
 						var message = {
 							model: model,
-							id: item.id,
 							data: item
 						};
+						message[options.primaryKey] = item[options.primaryKey];
+
 						if (method === 'put') {
 							// Update cache
 							socketUpdateResource(message);
@@ -321,15 +363,17 @@
 			// Request handler function for DELETEs
 			function deleteResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
-				var url = buildUrl(model, item.id, action, params, options);
+				var url = buildUrl(model, item[options.primaryKey], action, params, options);
 
 				if (options.verbose) {
 					$log.info('sailsResource calling DELETE ' + url);
 				}
 				socket.delete(url, function (response) {
 					handleResponse(item, response, action, deferred, function () {
-						removeFromCache(item.id);
-						$rootScope.$broadcast(MESSAGES.destroyed, {model: model, id: item.id});
+						removeFromCache(item[options.primaryKey]);
+						var tmp = {model: model};
+						tmp[options.primaryKey] = item[options.primaryKey];
+						$rootScope.$broadcast(MESSAGES.destroyed, tmp);
 						// leave local instance unmodified
 					});
 				});
@@ -341,9 +385,11 @@
 				forEach(cache, function (cacheItem, key) {
 					if (isArray(cacheItem)) {
 						forEach(cacheItem, function (item) {
-							if (item.id == message.id) {
+							if (item[options.primaryKey] == message[options.primaryKey]) {
 								if (needsPopulate(message.data, item)) { // go to server for updated data
-									retrieveResource(item, {id: item.id});
+									var tmp = {};
+									tmp[options.primaryKey] = item[options.primaryKey];
+									retrieveResource(item, tmp);
 								}
 								else {
 									extend(item, message.data);
@@ -351,9 +397,11 @@
 							}
 						});
 					}
-					else if (key == message.id) {
+					else if (key == message[options.primaryKey]) {
 						if (needsPopulate(message.data, cacheItem)) { // go to server for updated data
-							retrieveResource(cacheItem, {id: cacheItem.id});
+							var tmp = {};
+							tmp[options.primaryKey] = cacheItem[options.primaryKey];
+							retrieveResource(cacheItem, tmp);
 						}
 						else {
 							extend(cacheItem, message.data);
@@ -363,7 +411,7 @@
 			}
 
 			function socketCreateResource(message) {
-				cache[message.id] = new Resource(message.data);
+				cache[message[options.primaryKey]] = new Resource(message.data);
 				// when a new item is created we have no way of knowing if it belongs in a cached list,
 				// this necessitates doing a server fetch on all known lists
 				// TODO does this make sense?
@@ -375,7 +423,7 @@
 			}
 
 			function socketDeleteResource(message) {
-				removeFromCache(message.id);
+				removeFromCache(message[options.primaryKey]);
 			}
 
 			// Add each action to the Resource and/or its prototype
@@ -493,7 +541,7 @@
 			if (matches) {
 				forEach(matches, function (match) {
 					var paramName = match.replace(':', '');
-					actionUrl = actionUrl.replace(match, paramName == 'id' ? id : params[paramName]);
+					actionUrl = actionUrl.replace(match, paramName == options.primaryKey ? id : params[paramName]);
 				});
 			}
 
@@ -505,25 +553,32 @@
 			url.push(model);
 			if (id) url.push('/' + id);
 		}
-		url.push(createQueryString(params));
+		url.push(createQueryString(params, options));
 		return url.join('');
 	}
 
 	/**
-	 * Create a query-string out of a set of parameters.
+	 * Create a query-string out of a set of parameters, similar to way AngularJS does (as of 1.3.15)
+	 * @see https://github.com/angular/angular.js/commit/6c8464ad14dd308349f632245c1a064c9aae242a#diff-748e0a1e1a7db3458d5f95d59d7e16c9L1142
 	 */
 	function createQueryString(params) {
-		var qs = [];
-		if (params) {
-			qs.push('?');
-			forEach(params, function (value, key) {
-				if (key == 'id') return;
-				qs.push(key + '=' + value);
-				qs.push('&');
+		if (!params) { return ''; }
+
+		var parts = [];
+		Object.keys(params).sort().forEach(function(key) {
+			var value = params[key];
+			if (key === 'id') { return; }
+			if (value === null || value === undefined) { return; }
+			if (!Array.isArray(value)) { value = [value]; }
+			value.forEach(function(v) {
+				if (angular.isObject(v)) {
+					v = angular.isDate(v) ? v.toISOString() : angular.toJson(v);
+				}
+				parts.push(key + '=' + v);
 			});
-			qs.pop(); // remove last &
-		}
-		return qs.join('');
+		});
+		return parts.length ? '?' + parts.join('&') : '';
 	}
+
 
 })(window.angular);

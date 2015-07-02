@@ -1,7 +1,7 @@
 describe('sailsResource >', function () {
 	beforeEach(module('sailsResource'));
 	var service, socket;
-	var item, successHandler, errorHandler, successPromise, errorPromise;
+	var item, actions, successHandler, errorHandler, successPromise, errorPromise;
 
 	beforeEach(inject(function (mockSocket, $window) {
 		socket = mockSocket;
@@ -16,7 +16,7 @@ describe('sailsResource >', function () {
 		successPromise = jasmine.createSpy('successPromise');
 		errorPromise = jasmine.createSpy('errorPromise');
 
-		var actions = {
+		actions = {
 			'update': {method: 'PUT'},
 			'transformUpdate': {
 				method: 'PUT', transformRequest: function (request) {
@@ -31,7 +31,15 @@ describe('sailsResource >', function () {
 				}
 			},
 			'nocache': {method: 'GET', isArray: true, cache: false},
-			'customRoute': {method: 'GET', url: '/widget/:customId'}
+			'customRoute': {method: 'GET', url: '/widget/:customId'},
+			'customWhere': {
+				method: 'GET',
+				isArray: true,
+				params: {
+					where: {or: [{data: 'abc'}, {data: 'hij'}]},
+					limit: 1
+				}
+			}
 		};
 
 		var options = {
@@ -121,6 +129,38 @@ describe('sailsResource >', function () {
 		it('query works with custom url', function () {
 			var customItem = service.customRoute({customId: 'blah'});
 			expect(customItem.$retrieveUrl).toEqual('/widget/blah?customId=blah');
+		});
+
+		it('works with custom params', function(){
+			var customWhere = service.customWhere();
+			expect(customWhere.$retrieveUrl).toMatch(/limit=1/);
+		});
+
+		it('custom parameters can be overridden', function(){
+			var customWhere = service.customWhere({limit:2});
+			expect(customWhere.$retrieveUrl).toMatch(/limit=2/);
+		});
+
+		it('works with custom params which hold objects', function(){
+			var customWhere = service.customWhere();
+
+			var objStr = '';
+			customWhere.$retrieveUrl
+				// Get query string
+				.split('?').pop()
+				// Separate by key value pair
+				.split('&')
+				// Find where
+				.forEach(function(kvSet){
+					var kvSet = kvSet.split('=');
+					if (kvSet[0] === 'where') {
+						// save value to external value for comparison
+						objStr = kvSet[1];
+						return false;
+					}
+				});
+
+			expect(objStr).toEqual(JSON.stringify(actions.customWhere.params.where));
 		});
 	});
 
