@@ -336,13 +336,24 @@
 				socket[method](url, data, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						extend(item, data);
-						var tmp = {
+
+						var message = {
 							model: model,
 							data: item
 						};
-						tmp[options.primaryKey] = item[options.primaryKey];
+						message[options.primaryKey] = item[options.primaryKey];
 
-						$rootScope.$broadcast(method == 'put' ? MESSAGES.updated : MESSAGES.created, tmp);
+						if (method === 'put') {
+							// Update cache
+							socketUpdateResource(message);
+							// Emit event
+							$rootScope.$broadcast(MESSAGES.updated, message);
+						} else {
+							// Update cache
+							socketCreateResource(message);
+							// Emit event
+							$rootScope.$broadcast(MESSAGES.created, message);
+						}
 					});
 				});
 
