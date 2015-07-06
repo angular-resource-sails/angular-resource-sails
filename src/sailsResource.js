@@ -564,7 +564,7 @@
 		var queryParams = {};
 		angular.forEach(params, function(value, key) {
 			if (!urlParams[key]) {
-				queryParams = value;
+				queryParams[key] = value;
 			}
 		});
 		
