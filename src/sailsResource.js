@@ -533,6 +533,8 @@
 	 */
 	function buildUrl(model, id, action, params, options) {
 		var url = [];
+		var urlParams = {};
+		
 		if (action && action.url) {
 			var actionUrl = action.url;
 
@@ -541,7 +543,12 @@
 			if (matches) {
 				forEach(matches, function (match) {
 					var paramName = match.replace(':', '');
-					actionUrl = actionUrl.replace(match, paramName == options.primaryKey ? id : params[paramName]);
+					if (paramName === options.primaryKey) {
+						actionUrl = actionUrl.replace(match, id);
+					} else {
+						urlParams[paramName] = true;
+						actionUrl = actionUrl.replace(match, params[paramName]);
+					}
 				});
 			}
 
@@ -553,7 +560,15 @@
 			url.push(model);
 			if (id) url.push('/' + id);
 		}
-		url.push(createQueryString(params, options));
+		
+		var queryParams = {};
+		angular.forEach(params, function(value, key) {
+			if (!urlParams[key]) {
+				queryParams[key] = value;
+			}
+		});
+		
+		url.push(createQueryString(queryParams, options));
 		return url.join('');
 	}
 
