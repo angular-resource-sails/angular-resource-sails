@@ -148,6 +148,10 @@ $rootScope.$on('$sailsResourceUpdated', function(event, message) {
 });
 ```
 
+You can also subscribe to events on collections inside models. The events names are :
+- `$sailsResourceAddedTo`, when an element has been added in a collection
+- `$sailsResourceRemovedFrom` when an element has been removed from a collection
+
 Development
 ===============================
 1. `bower install`
