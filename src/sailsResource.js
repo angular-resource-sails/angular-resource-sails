@@ -25,13 +25,13 @@
 
 		this.configuration = {};
 
-		this.$get = ['$rootScope', '$window', '$log', '$q', function ($rootScope, $window, $log, $q) {
+		this.$get = ['$rootScope', '$window', '$log', '$q', '$timeout', function ($rootScope, $window, $log, $q, $timeout) {
 			var config = extend({}, DEFAULT_CONFIGURATION, this.configuration);
-			return resourceFactory($rootScope, $window, $log, $q, config);
+			return resourceFactory($rootScope, $window, $log, $q, $timeout, config);
 		}];
 	});
 
-	function resourceFactory($rootScope, $window, $log, $q, config) {
+	function resourceFactory($rootScope, $window, $log, $q, $timeout, config) {
 
 		var DEFAULT_ACTIONS = {
 			'get': {method: 'GET'},
@@ -47,9 +47,6 @@
 			updated: '$sailsResourceUpdated',
 			destroyed: '$sailsResourceDestroyed',
 			messaged: '$sailsResourceMessaged',
-			addedTo : '$sailsResourceAddedTo',
-			removedFrom : '$sailsResourceRemovedFrom',
-
 
 			// Socket
 			connected: '$sailsConnected',
@@ -90,25 +87,25 @@
 			// Setup socket default messages
 
 			socket.on('connect', function () {
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					$rootScope.$broadcast(MESSAGES.connected);
 				});
 			});
 
 			socket.on('disconnect', function () {
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					$rootScope.$broadcast(MESSAGES.disconnected);
 				});
 			});
 
 			socket.on('reconnect', function () {
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					$rootScope.$broadcast(MESSAGES.reconnected);
 				});
 			});
 
 			socket.on('reconnecting', function (timeDisconnected, reconnectCount) {
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					$rootScope.$broadcast(MESSAGES.reconnecting, {
 						timeDisconnected: timeDisconnected,
 						reconnectCount: reconnectCount
@@ -117,7 +114,7 @@
 			});
 
 			socket.on('error', function (error) {
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					$rootScope.$broadcast(MESSAGES.socketError, error);
 				});
 			});
@@ -350,12 +347,16 @@
 							// Update cache
 							socketUpdateResource(message);
 							// Emit event
-							$rootScope.$broadcast(MESSAGES.updated, message);
+							$timeout(function() {
+								$rootScope.$broadcast(MESSAGES.updated, message);
+							});
 						} else {
 							// Update cache
 							socketCreateResource(message);
 							// Emit event
-							$rootScope.$broadcast(MESSAGES.created, message);
+							$timeout(function() {
+								$rootScope.$broadcast(MESSAGES.created, message);
+							});
 						}
 					});
 				});
@@ -376,7 +377,9 @@
 						removeFromCache(item[options.primaryKey]);
 						var tmp = {model: model};
 						tmp[options.primaryKey] = item[options.primaryKey];
-						$rootScope.$broadcast(MESSAGES.destroyed, tmp);
+						$timeout(function() {
+							$rootScope.$broadcast(MESSAGES.destroyed, tmp);
+						});
 						// leave local instance unmodified
 					});
 				});
@@ -470,7 +473,7 @@
 					$log.info('sailsResource received \'' + model + '\' message: ', message);
 				}
 				var messageName = null;
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					switch (message.verb) {
 						case 'updated':
 							socketUpdateResource(message);
@@ -486,12 +489,6 @@
 							break;
 						case 'messaged':
 							messageName = MESSAGES.messaged;
-							break;
-						case 'addedTo' : 
-							messageName = MESSAGES.addedTo;
-							break;
-						case 'removedFrom' :
-							messageName = MESSAGES.removedFrom;
 							break;
 					}
 					$rootScope.$broadcast(messageName, extend({model: model}, message));
