@@ -48,7 +48,7 @@
 			destroyed: '$sailsResourceDestroyed',
 			messaged: '$sailsResourceMessaged',
 			addedTo : '$sailsResourceAddedTo',
-			removedFrom : '$sailsResourceRemovedFrom'
+			removedFrom : '$sailsResourceRemovedFrom',
 
 
 			// Socket
