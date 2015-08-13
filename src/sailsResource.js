@@ -492,6 +492,7 @@
 							break;
 						case 'removedFrom' :
 							messageName = MESSAGES.removedFrom;
+							break;
 					}
 					$rootScope.$broadcast(messageName, extend({model: model}, message));
 				});
