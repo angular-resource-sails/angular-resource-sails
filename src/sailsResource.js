@@ -225,38 +225,40 @@
 					if (data && (data.error || data.statusCode > 400)) {
 						$log.error(data);
 						deferred.reject(data.error || data, item, data);
-					}
-					else if (!isArray(item) && isArray(data) && data.length != 1) {
-						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
-						// item is not an array, only one item should be found or an error is thrown.
-						var errorMessage = (data.length ? 'Multiple' : 'No') +
-							' items found while performing GET on a singular \'' + model + '\' Resource; did you mean to do a query?';
+					} else {
+						data = data.body;
+						if (!isArray(item) && isArray(data) && data.length != 1) {
+							// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
+							// item is not an array, only one item should be found or an error is thrown.
+							var errorMessage = (data.length ? 'Multiple' : 'No') +
+								' items found while performing GET on a singular \'' + model + '\' Resource; did you mean to do a query?';
 
-						$log.error(errorMessage);
-						deferred.reject(errorMessage, item, data);
-					}
-					else {
-						// converting single array to single item
-						if (!isArray(item) && isArray(data)) data = data[0];
-
-						if (isArray(action.transformResponse)) {
-							forEach(action.transformResponse, function(transformResponse) {
-								if (isFunction(transformResponse)) {
-									data = transformResponse(data);
-								}
-							})
+							$log.error(errorMessage);
+							deferred.reject(errorMessage, item, data);
 						}
-						if (isFunction(action.transformResponse)) data = action.transformResponse(data);
-						if (isFunction(delegate)) delegate(data);
-						
-						// 1) Internally resolve with both item and header getter
-						// for pass'em to explicit success handler
-						// 2) In attachPromise() cut off header getter, so that
-						// implicit success handlers receive only item
-						deferred.resolve({
-							item: item,
-							getHeaderFn: function(name) { return jwr && jwr.headers && jwr.headers[name]; }
-						});
+						else {
+							// converting single array to single item
+							if (!isArray(item) && isArray(data)) data = data[0];
+
+							if (isArray(action.transformResponse)) {
+								forEach(action.transformResponse, function(transformResponse) {
+									if (isFunction(transformResponse)) {
+										data = transformResponse(data);
+									}
+								})
+							}
+							if (isFunction(action.transformResponse)) data = action.transformResponse(data);
+							if (isFunction(delegate)) delegate(data);
+							
+							// 1) Internally resolve with both item and header getter
+							// for pass'em to explicit success handler
+							// 2) In attachPromise() cut off header getter, so that
+							// implicit success handlers receive only item
+							deferred.resolve({
+								item: item,
+								getHeaderFn: function(name) { return jwr && jwr.headers && jwr.headers[name]; }
+							});
+						}
 					}
 				});
 			}
@@ -290,8 +292,8 @@
 					$log.info('sailsResource calling GET ' + url);
 				}
 
-				socket.get(url, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
+				socket.get(url, function (response, jwr) {
+					handleResponse(item, jwr, action, deferred, function (data) {
 						if (isArray(item)) { // empty the list and update with returned data
 							while (item.length) item.pop();
 							forEach(data, function (responseItem) {
@@ -336,8 +338,8 @@
 					$log.info('sailsResource calling ' + method.toUpperCase() + ' ' + url);
 				}
 
-				socket[method](url, data, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
+				socket[method](url, data, function (response, jwr) {
+					handleResponse(item, jwr, action, deferred, function (data) {
 						extend(item, data);
 
 						var message = {
@@ -371,8 +373,8 @@
 				if (options.verbose) {
 					$log.info('sailsResource calling DELETE ' + url);
 				}
-				socket.delete(url, function (response) {
-					handleResponse(item, response, action, deferred, function () {
+				socket.delete(url, function (response, jwr) {
+					handleResponse(item, jwr, action, deferred, function () {
 						removeFromCache(item[options.primaryKey]);
 						var tmp = {model: model};
 						tmp[options.primaryKey] = item[options.primaryKey];
