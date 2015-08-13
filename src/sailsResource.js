@@ -47,6 +47,9 @@
 			updated: '$sailsResourceUpdated',
 			destroyed: '$sailsResourceDestroyed',
 			messaged: '$sailsResourceMessaged',
+			addedTo : '$sailsResourceAddedTo',
+			removedFrom : '$sailsResourceRemovedFrom',
+
 
 			// Socket
 			connected: '$sailsConnected',
@@ -483,6 +486,12 @@
 							break;
 						case 'messaged':
 							messageName = MESSAGES.messaged;
+							break;
+						case 'addedTo' : 
+							messageName = MESSAGES.addedTo;
+							break;
+						case 'removedFrom' :
+							messageName = MESSAGES.removedFrom;
 							break;
 					}
 					$rootScope.$broadcast(messageName, extend({model: model}, message));
