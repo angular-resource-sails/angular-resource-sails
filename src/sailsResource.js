@@ -47,6 +47,8 @@
 			updated: '$sailsResourceUpdated',
 			destroyed: '$sailsResourceDestroyed',
 			messaged: '$sailsResourceMessaged',
+			addedTo : '$sailsResourceAddedTo',
+			removedFrom : '$sailsResourceRemovedFrom',
 
 			// Socket
 			connected: '$sailsConnected',
@@ -216,7 +218,7 @@
 			// Handle a response
 			function handleResponse(item, data, action, deferred, delegate) {
 				action = action || {};
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					item.$resolved = true;
 
 					if (data && (data.error || data.statusCode > 400)) {
@@ -489,6 +491,12 @@
 							break;
 						case 'messaged':
 							messageName = MESSAGES.messaged;
+							break;
+						case 'addedTo' : 
+							messageName = MESSAGES.addedTo;
+							break;
+						case 'removedFrom' :
+							messageName = MESSAGES.removedFrom;
 							break;
 					}
 					$rootScope.$broadcast(messageName, extend({model: model}, message));
