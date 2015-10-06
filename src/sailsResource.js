@@ -47,8 +47,8 @@
 			updated: '$sailsResourceUpdated',
 			destroyed: '$sailsResourceDestroyed',
 			messaged: '$sailsResourceMessaged',
-			addedTo : '$sailsResourceAddedTo',
-			removedFrom : '$sailsResourceRemovedFrom',
+			addedTo: '$sailsResourceAddedTo',
+			removedFrom: '$sailsResourceRemovedFrom',
 
 
 			// Socket
@@ -77,10 +77,10 @@
 			// Create our socket instance based on options
 
 			var socket;
-			if(options.socket) { // Was given to us
+			if (options.socket) { // Was given to us
 				socket = options.socket;
 			}
-			else if(options.origin) { // A custom origin
+			else if (options.origin) { // A custom origin
 				socket = $window.io.sails.connect(options.origin);
 			}
 			else { // Default: use base socket
@@ -192,7 +192,11 @@
 						// pull out of cache if available, otherwise create new instance
 						item = cache[key] || (action.isArray ? []
 								// Set key on object using options.primaryKey
-								: (function(){ var tmp = {}; tmp[options.primaryKey] = key; return new Resource(tmp) })());
+								: (function () {
+								var tmp = {};
+								tmp[options.primaryKey] = key;
+								return new Resource(tmp)
+							})());
 						cache[key] = item; // store item in cache
 					}
 
@@ -240,7 +244,7 @@
 						if (!isArray(item) && isArray(data)) data = data[0];
 
 						if (isArray(action.transformResponse)) {
-							forEach(action.transformResponse, function(transformResponse) {
+							forEach(action.transformResponse, function (transformResponse) {
 								if (isFunction(transformResponse)) {
 									data = transformResponse(data);
 								}
@@ -248,14 +252,16 @@
 						}
 						if (isFunction(action.transformResponse)) data = action.transformResponse(data);
 						if (isFunction(delegate)) delegate(data);
-						
+
 						// 1) Internally resolve with both item and header getter
 						// for pass'em to explicit success handler
 						// 2) In attachPromise() cut off header getter, so that
 						// implicit success handlers receive only item
 						deferred.resolve({
 							item: item,
-							getHeaderFn: function(name) { return jwr && jwr.headers && jwr.headers[name]; }
+							getHeaderFn: function (name) {
+								return jwr && jwr.headers && jwr.headers[name];
+							}
 						});
 					}
 				});
@@ -263,7 +269,7 @@
 
 			function attachPromise(item, success, error) {
 				var deferred = $q.defer();
-				item.$promise = deferred.promise.then(function(result) {
+				item.$promise = deferred.promise.then(function (result) {
 					// Like in ngResource explicit success handler
 					// (passed directly as an argument of action call)
 					// receives two arguments:
@@ -304,8 +310,8 @@
 							extend(item, data); // update item
 
 							// If item is not in the cache based on its id, add it now
-							if (!cache[ item[ options.primaryKey ] ]) {
-								cache[ item[ options.primaryKey ] ] = item;
+							if (!cache[item[options.primaryKey]]) {
+								cache[item[options.primaryKey]] = item;
 							}
 						}
 					});
@@ -384,6 +390,64 @@
 				return item.$promise;
 			}
 
+			function socketAddedToResource(model, message) {
+				var url = options.prefix + "/" + model + "/" + message[options.primaryKey] + "/" + message.attribute + "/" + message.addedId;
+				forEach(cache, function (cacheItem, key) {
+					if (isArray(cacheItem)) {
+						forEach(cacheItem, function (item) {
+							if (item[options.primaryKey] == message[options.primaryKey]) {
+								socket.get(url, function (response) {
+									$rootScope.$apply(function () {
+										if (isArray(item[message.attribute])) {
+											item[message.attribute].push(response[0]);
+										}
+										else {
+											item[message.attribute] = response;
+										}
+									});
+								});
+							}
+						});
+					}
+					else if (key == message[options.primaryKey]) {
+						socket.get(url, function (response) {
+							$rootScope.$apply(function () {
+								if (isArray(item[message.attribute])) {
+									cacheItem[message.attribute].push(response[0]);
+								}
+								else {
+									cacheItem[message.attribute] = response;
+								}
+							});
+							s
+						});
+					}
+				});
+			}
+
+			function socketRemovedFromResource(message) {
+				forEach(cache, function (cacheItem, key) {
+					if (isArray(cacheItem)) {
+						forEach(cacheItem, function (item) {
+							if (item[options.primaryKey] == message[options.primaryKey]) {
+								forEach(item[message.attribute], function (itemRemoved, keyRemoved) {
+									if (itemRemoved[options.primaryKey] == message.removedId) {
+										item[message.attribute].splice(keyRemoved, 1);
+									}
+								})
+							}
+						});
+					}
+					else if (key == message[options.primaryKey]) {
+						forEach(cacheItem[message.attribute], function (itemRemoved, keyRemoved) {
+							if (itemRemoved[options.primaryKey] == message.removedId) {
+								cacheItem[message.attribute].splice(keyRemoved, 1);
+							}
+						})
+					}
+				});
+			}
+
 			function socketUpdateResource(message) {
 				forEach(cache, function (cacheItem, key) {
 					if (isArray(cacheItem)) {
@@ -457,7 +521,7 @@
 			});
 
 			// Handy function for converting a Resource into plain JSON data
-			Resource.prototype.toJSON = function() {
+			Resource.prototype.toJSON = function () {
 				var data = extend({}, this);
 				delete data.$promise;
 				delete data.$resolved;
@@ -487,10 +551,12 @@
 						case 'messaged':
 							messageName = MESSAGES.messaged;
 							break;
-						case 'addedTo' : 
+						case 'addedTo' :
+							socketAddedToResource(model, message);
 							messageName = MESSAGES.addedTo;
 							break;
 						case 'removedFrom' :
+							socketRemovedFromResource(message);
 							messageName = MESSAGES.removedFrom;
 							break;
 					}
@@ -543,7 +609,7 @@
 	function buildUrl(model, id, action, params, options) {
 		var url = [];
 		var urlParams = {};
-		
+
 		if (action && action.url) {
 			var actionUrl = action.url;
 
@@ -569,14 +635,14 @@
 			url.push(model);
 			if (id) url.push('/' + id);
 		}
-		
+
 		var queryParams = {};
-		angular.forEach(params, function(value, key) {
+		angular.forEach(params, function (value, key) {
 			if (!urlParams[key]) {
 				queryParams[key] = value;
 			}
 		});
-		
+
 		url.push(createQueryString(queryParams, options));
 		return url.join('');
 	}
@@ -586,15 +652,23 @@
 	 * @see https://github.com/angular/angular.js/commit/6c8464ad14dd308349f632245c1a064c9aae242a#diff-748e0a1e1a7db3458d5f95d59d7e16c9L1142
 	 */
 	function createQueryString(params) {
-		if (!params) { return ''; }
+		if (!params) {
+			return '';
+		}
 
 		var parts = [];
-		Object.keys(params).sort().forEach(function(key) {
+		Object.keys(params).sort().forEach(function (key) {
 			var value = params[key];
-			if (key === 'id') { return; }
-			if (value === null || value === undefined) { return; }
-			if (!Array.isArray(value)) { value = [value]; }
-			value.forEach(function(v) {
+			if (key === 'id') {
+				return;
+			}
+			if (value === null || value === undefined) {
+				return;
+			}
+			if (!Array.isArray(value)) {
+				value = [value];
+			}
+			value.forEach(function (v) {
 				if (angular.isObject(v)) {
 					v = angular.isDate(v) ? v.toISOString() : angular.toJson(v);
 				}
