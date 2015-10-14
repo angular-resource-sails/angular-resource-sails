@@ -6,7 +6,8 @@
 		isObject = angular.isObject,
 		isArray = angular.isArray,
 		isString = angular.isString,
-		isFunction = angular.isFunction;
+		isFunction = angular.isFunction,
+		isDefined = angular.isDefined;
 
 	angular.module('sailsResource', []).provider('sailsResource', function () {
 
@@ -20,18 +21,21 @@
 			// Set a specific origin
 			origin: null,
 			// Set resource primary key
-			primaryKey: 'id'
+			primaryKey: 'id',
+
+			//Set associations of the model
+			associations: {}
 		};
 
 		this.configuration = {};
 
-		this.$get = ['$rootScope', '$window', '$log', '$q', function ($rootScope, $window, $log, $q) {
+		this.$get = ['$rootScope', '$window', '$log', '$q', '$timeout', function ($rootScope, $window, $log, $q, $timeout) {
 			var config = extend({}, DEFAULT_CONFIGURATION, this.configuration);
-			return resourceFactory($rootScope, $window, $log, $q, config);
+			return resourceFactory($rootScope, $window, $log, $q, $timeout, config);
 		}];
 	});
 
-	function resourceFactory($rootScope, $window, $log, $q, config) {
+	function resourceFactory($rootScope, $window, $log, $q, $timeout, config) {
 
 		var DEFAULT_ACTIONS = {
 			'get': {method: 'GET'},
@@ -197,6 +201,7 @@
 								tmp[options.primaryKey] = key;
 								return new Resource(tmp)
 							})());
+
 						cache[key] = item; // store item in cache
 					}
 
@@ -228,7 +233,7 @@
 
 					if (data && (data.error || data.statusCode > 400)) {
 						$log.error(data);
-						deferred.reject(data.error || data, item, data);
+						deferred.reject(data || data, item, data);
 					}
 					else if (!isArray(item) && isArray(data) && data.length != 1) {
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
@@ -285,6 +290,34 @@
 				return deferred;
 			}
 
+			function resolveAssociations(responseItem) {
+				forEach(options.associations, function (association, attr) {
+					if (isDefined(responseItem[attr])) {
+						var associateParams = {};
+						if (isArray(responseItem[attr])) {
+							if (responseItem[attr].length > 0) {
+								associateParams[association.primaryKey] = responseItem[attr];
+
+								if (isObject(responseItem[attr][0])) {
+									associateParams[association.primaryKey] = _.pluck(responseItem[attr], association.primaryKey);
+								}
+								responseItem[attr] = association.model.query(associateParams);
+							}
+						}
+						else {
+							if (isObject(responseItem[attr])) {
+								associateParams[association.primaryKey] = responseItem[attr][association.primaryKey];
+								responseItem[attr] = association.model.get(associateParams);
+							}
+							else if (isString(responseItem[attr])) {
+								associateParams[association.primaryKey] = responseItem[attr];
+								responseItem[attr] = association.model.get(associateParams);
+							}
+						}
+					}
+				});
+			}
+
 			// Request handler function for GETs
 			function retrieveResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
@@ -296,6 +329,7 @@
 					$log.info('sailsResource calling GET ' + url);
 				}
 
+
 				socket.get(url, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						if (isArray(item)) { // empty the list and update with returned data
@@ -303,19 +337,26 @@
 							forEach(data, function (responseItem) {
 								responseItem = new Resource(responseItem);
 								responseItem.$resolved = true;
+
+								resolveAssociations(responseItem);
+
 								item.push(responseItem); // update list
 							});
 						}
 						else {
 							extend(item, data); // update item
 
+							resolveAssociations(item);
+
 							// If item is not in the cache based on its id, add it now
 							if (!cache[item[options.primaryKey]]) {
 								cache[item[options.primaryKey]] = item;
 							}
 						}
+
 					});
 				});
+
 				return item;
 			}
 
@@ -345,6 +386,10 @@
 				socket[method](url, data, function (response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						extend(item, data);
+
+						if(method == "post") {
+							resolveAssociations(item);
+						}
 
 						var message = {
 							model: model,
@@ -396,31 +441,56 @@
 					if (isArray(cacheItem)) {
 						forEach(cacheItem, function (item) {
 							if (item[options.primaryKey] == message[options.primaryKey]) {
-								socket.get(url, function (response) {
-									$rootScope.$apply(function () {
-										if (isArray(item[message.attribute])) {
-											item[message.attribute].push(response[0]);
-										}
-										else {
-											item[message.attribute] = response;
-										}
+								var association = options.associations[message.attribute];
+								if (isDefined(association)) {
+									var associationParams = {};
+									associationParams[association.primaryKey] = message.addedId;
+									if (isArray(item[message.attribute])) {
+										item[message.attribute].push(association.model.get(associationParams));
+									}
+									else {
+										item[message.attribute] = association.model.get(associationParams);
+									}
+								}
+								else {
+									socket.get(url, function (response) {
+										$rootScope.$apply(function () {
+											if (isArray(item[message.attribute])) {
+												item[message.attribute].push(response[0]);
+											}
+											else {
+												item[message.attribute] = response;
+											}
+										});
 									});
-								});
+								}
 							}
 						});
 					}
 					else if (key == message[options.primaryKey]) {
-						socket.get(url, function (response) {
-							$rootScope.$apply(function () {
-								if (isArray(item[message.attribute])) {
-									cacheItem[message.attribute].push(response[0]);
-								}
-								else {
-									cacheItem[message.attribute] = response;
-								}
+						var association = options.associations[message.attribute];
+						if (isDefined(association)) {
+							var associationParams = {};
+							associationParams[association.primaryKey] = message.addedId;
+							if (isArray(cacheItem[message.attribute])) {
+								cacheItem[message.attribute].push(association.model.get(associationParams));
+							}
+							else {
+								cacheItem[message.attribute] = association.model.get(associationParams);
+							}
+						}
+						else {
+							socket.get(url, function (response) {
+								$rootScope.$apply(function () {
+									if (isArray(cacheItem[message.attribute])) {
+										cacheItem[message.attribute].push(response[0]);
+									}
+									else {
+										cacheItem[message.attribute] = response;
+									}
+								});
 							});
-							s
-						});
+						}
 					}
 				});
 			}
@@ -475,6 +545,7 @@
 						}
 					}
 				});
+
 			}
 
 			function socketCreateResource(message) {
@@ -609,6 +680,10 @@
 	function buildUrl(model, id, action, params, options) {
 		var url = [];
 		var urlParams = {};
+
+		if (isArray(id)) {
+			id = null;
+		}
 
 		if (action && action.url) {
 			var actionUrl = action.url;
