@@ -360,6 +360,23 @@
 				return item;
 			}
 
+			function clearAssociations(data) {
+				forEach(options.associations, function (association, attr) {
+					if(isDefined(data[attr])) {
+						if(isArray(data[attr])) {
+							delete data[attr];
+						}
+						else if(isObject(data[attr])) {
+							if(isDefined(data[attr][association.primaryKey])) {
+								data[attr] = data[attr][association.primaryKey];
+							}
+						}
+					}
+				});
+
+				return data;
+			}
+
 			// Request handler function for PUTs and POSTs
 			function createOrUpdateResource(item, params, action, success, error) {
 				var deferred = attachPromise(item, success, error);
@@ -373,6 +390,11 @@
 
 				// prevents prototype functions being sent
 				var data = copyAndClear(transformedData || item, {});
+
+				data = clearAssociations(data);
+
+				console.log(data);
+
 
 				var url = buildUrl(model, data[options.primaryKey], action, params, options);
 
