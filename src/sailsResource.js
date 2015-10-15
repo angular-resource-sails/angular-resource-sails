@@ -41,6 +41,12 @@
 			'get': {method: 'GET'},
 			'save': {method: 'POST'},
 			'query': {method: 'GET', isArray: true},
+			'association': {
+				method: 'GET',
+				isArray: true,
+				url: "/api/:model/:modelId/:association",
+				isAssociation: true
+			},
 			'remove': {method: 'DELETE'},
 			'delete': {method: 'DELETE'}
 		};
@@ -187,7 +193,7 @@
 					// 2) action uses a custom url (Sails only sends updates to ids) OR
 					// 3) the resource is an individual item without an id (Sails only sends updates to ids)
 
-					if (!action.cache || action.url || (!action.isArray && (!instanceParams || !instanceParams[options.primaryKey]))) { // uncached
+					if (!action.cache || (!action.isAssociation && action.url) || (!action.isArray && (!instanceParams || !instanceParams[options.primaryKey]))) { // uncached
 						item = action.isArray ? [] : new Resource();
 					}
 					else {
@@ -296,23 +302,28 @@
 						var associateParams = {};
 						if (isArray(responseItem[attr])) {
 							if (responseItem[attr].length > 0) {
-								associateParams[association.primaryKey] = responseItem[attr];
-
 								if (isObject(responseItem[attr][0])) {
-									associateParams[association.primaryKey] = _.pluck(responseItem[attr], association.primaryKey);
+									associateParams[options.primaryKey] = _.pluck(responseItem[attr], options.primaryKey);
 								}
-								responseItem[attr] = association.model.query(associateParams);
+								else {
+									associateParams[options.primaryKey] = responseItem[attr];
+								}
+								responseItem[attr] = association.model.association({
+									model: model,
+									modelId: responseItem[options.primaryKey],
+									association: attr
+								});
+
 							}
 						}
 						else {
 							if (isObject(responseItem[attr])) {
 								associateParams[association.primaryKey] = responseItem[attr][association.primaryKey];
-								responseItem[attr] = association.model.get(associateParams);
 							}
 							else if (isString(responseItem[attr])) {
 								associateParams[association.primaryKey] = responseItem[attr];
-								responseItem[attr] = association.model.get(associateParams);
 							}
+							responseItem[attr] = association.model.get(associateParams);
 						}
 					}
 				});
@@ -324,6 +335,9 @@
 
 				var url = buildUrl(model, params ? params[options.primaryKey] : null, action, params, options);
 				item.$retrieveUrl = url;
+
+				console.log("retrieveResource url");
+				console.log(url);
 
 				if (options.verbose) {
 					$log.info('sailsResource calling GET ' + url);
@@ -362,12 +376,20 @@
 
 			function clearAssociations(data) {
 				forEach(options.associations, function (association, attr) {
-					if(isDefined(data[attr])) {
-						if(isArray(data[attr])) {
-							delete data[attr];
+					if (isDefined(data[attr])) {
+						if (isArray(data[attr])) {
+							var items = [];
+							forEach(data[attr], function (item) {
+								if (item.$resolved) {
+									items.push(item[association.primaryKey]);
+								}
+								else {
+									items.push(item);
+								}
+							});
 						}
-						else if(isObject(data[attr])) {
-							if(isDefined(data[attr][association.primaryKey])) {
+						else if (isObject(data[attr])) {
+							if (isDefined(data[attr][association.primaryKey])) {
 								data[attr] = data[attr][association.primaryKey];
 							}
 						}
@@ -393,8 +415,6 @@
 
 				data = clearAssociations(data);
 
-				console.log(data);
-
 
 				var url = buildUrl(model, data[options.primaryKey], action, params, options);
 
@@ -409,7 +429,7 @@
 					handleResponse(item, response, action, deferred, function (data) {
 						extend(item, data);
 
-						if(method == "post") {
+						if (method == "post") {
 							resolveAssociations(item);
 						}
 
@@ -459,22 +479,12 @@
 
 			function socketAddedToResource(model, message) {
 				var url = options.prefix + "/" + model + "/" + message[options.primaryKey] + "/" + message.attribute + "/" + message.addedId;
-				forEach(cache, function (cacheItem, key) {
-					if (isArray(cacheItem)) {
-						forEach(cacheItem, function (item) {
-							if (item[options.primaryKey] == message[options.primaryKey]) {
-								var association = options.associations[message.attribute];
-								if (isDefined(association)) {
-									var associationParams = {};
-									associationParams[association.primaryKey] = message.addedId;
-									if (isArray(item[message.attribute])) {
-										item[message.attribute].push(association.model.get(associationParams));
-									}
-									else {
-										item[message.attribute] = association.model.get(associationParams);
-									}
-								}
-								else {
+				var association = options.associations[message.attribute];
+				if (!isDefined(association)) {
+					forEach(cache, function (cacheItem, key) {
+						if (isArray(cacheItem)) {
+							forEach(cacheItem, function (item) {
+								if (item[options.primaryKey] == message[options.primaryKey]) {
 									socket.get(url, function (response) {
 										$rootScope.$apply(function () {
 											if (isArray(item[message.attribute])) {
@@ -486,22 +496,9 @@
 										});
 									});
 								}
-							}
-						});
-					}
-					else if (key == message[options.primaryKey]) {
-						var association = options.associations[message.attribute];
-						if (isDefined(association)) {
-							var associationParams = {};
-							associationParams[association.primaryKey] = message.addedId;
-							if (isArray(cacheItem[message.attribute])) {
-								cacheItem[message.attribute].push(association.model.get(associationParams));
-							}
-							else {
-								cacheItem[message.attribute] = association.model.get(associationParams);
-							}
+							});
 						}
-						else {
+						else if (key == message[options.primaryKey]) {
 							socket.get(url, function (response) {
 								$rootScope.$apply(function () {
 									if (isArray(cacheItem[message.attribute])) {
@@ -513,31 +510,34 @@
 								});
 							});
 						}
-					}
-				});
+					});
+				}
 			}
 
 			function socketRemovedFromResource(message) {
-				forEach(cache, function (cacheItem, key) {
-					if (isArray(cacheItem)) {
-						forEach(cacheItem, function (item) {
-							if (item[options.primaryKey] == message[options.primaryKey]) {
-								forEach(item[message.attribute], function (itemRemoved, keyRemoved) {
-									if (itemRemoved[options.primaryKey] == message.removedId) {
-										item[message.attribute].splice(keyRemoved, 1);
-									}
-								})
-							}
-						});
-					}
-					else if (key == message[options.primaryKey]) {
-						forEach(cacheItem[message.attribute], function (itemRemoved, keyRemoved) {
-							if (itemRemoved[options.primaryKey] == message.removedId) {
-								cacheItem[message.attribute].splice(keyRemoved, 1);
-							}
-						})
-					}
-				});
+				var association = options.associations[message.attribute];
+				if (!isDefined(association)) {
+					forEach(cache, function (cacheItem, key) {
+						if (isArray(cacheItem)) {
+							forEach(cacheItem, function (item) {
+								if (item[options.primaryKey] == message[options.primaryKey]) {
+									forEach(item[message.attribute], function (itemRemoved, keyRemoved) {
+										if (itemRemoved[options.primaryKey] == message.removedId) {
+											item[message.attribute].splice(keyRemoved, 1);
+										}
+									})
+								}
+							});
+						}
+						else if (key == message[options.primaryKey]) {
+							forEach(cacheItem[message.attribute], function (itemRemoved, keyRemoved) {
+								if (itemRemoved[options.primaryKey] == message.removedId) {
+									cacheItem[message.attribute].splice(keyRemoved, 1);
+								}
+							})
+						}
+					});
+				}
 			}
 
 			function socketUpdateResource(message) {
@@ -575,9 +575,21 @@
 				// when a new item is created we have no way of knowing if it belongs in a cached list,
 				// this necessitates doing a server fetch on all known lists
 				// TODO does this make sense?
+				console.log("socket create cache");
+				console.log(cache);
 				forEach(cache, function (cacheItem, key) {
 					if (isArray(cacheItem)) {
-						retrieveResource(cacheItem, JSON.parse(key));
+						var object = JSON.parse(key);
+						console.log("socket create object param");
+
+						if (object.model && object.modelId && object.association) {
+							retrieveResource(cacheItem, object, DEFAULT_ACTIONS.association);
+						}
+						else {
+							retrieveResource(cacheItem, object);
+						}
+
+
 					}
 				});
 			}
