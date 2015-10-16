@@ -210,11 +210,10 @@
 					// 3) the resource is an individual item without an id (Sails only sends updates to ids)
 
 					if (!action.cache || (action.url && !action.isAssociation) || (!action.isArray && (!instanceParams || !instanceParams[context.options.primaryKey]))) { // uncached
-						console.log("Not cached");
+
 						item = action.isArray ? [] : new Resource();
 					}
 					else {
-						console.log("Cached");
 						// cache key is 1) stringified params for lists or 2) id for individual items
 						var key = action.isArray ? JSON.stringify(instanceParams || {}) : instanceParams[context.options.primaryKey];
 						// pull out of cache if available, otherwise create new instance
@@ -229,7 +228,6 @@
 						this.cache[key] = item; // store item in cache
 					}
 
-					console.log(this.cache);
 
 					return context.retrieveResource(item, instanceParams, action, success, error);
 				}
@@ -786,7 +784,7 @@
 			url.push("/");
 			url.push(actionUrl);
 		}
-		else if (action.path) {
+		else if (action && action.path) {
 			var actionUrl = action.path;
 			var originalUrl = [];
 			originalUrl.push(options.prefix);
