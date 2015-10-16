@@ -44,7 +44,17 @@
 			'association': {
 				method: 'GET',
 				isArray: true,
-				url: "/api/:model/:modelId/:association",
+				url: ":model/:modelId/:association",
+				isAssociation: true
+			},
+			'removeAssociation': {
+				method: 'DELETE',
+				path: ":association/:associatedId",
+				isAssociation: true
+			},
+			'addAssociation': {
+				method: 'POST',
+				path: ":association/:associatedId",
 				isAssociation: true
 			},
 			'remove': {method: 'DELETE'},
@@ -69,29 +79,35 @@
 			socketError: '$sailsSocketError'
 		};
 
-		return function (model, actions, options) {
+		function ResourceWrapper(model, actions, options) {
 
-			if (typeof model != 'string' || model.length == 0) {
+			var context = this;
+
+			this.model = model;
+			this.actions = actions;
+			this.options = options;
+
+			if (typeof context.model != 'string' || context.model.length == 0) {
 				throw 'Model name is required';
 			}
 
-			model = model.toLowerCase(); // Sails always sends models lowercase
-			actions = extend({}, DEFAULT_ACTIONS, actions);
-			options = extend({}, config, options);
+			this.model = context.model.toLowerCase(); // Sails always sends models lowercase
+			this.actions = extend({}, DEFAULT_ACTIONS, context.actions);
+			this.options = extend({}, config, context.options);
 
 			// Ensure prefix starts with forward slash
-			if (options.prefix && options.prefix.charAt(0) != '/') {
-				options.prefix = '/' + options.prefix;
+			if (context.options.prefix && context.options.prefix.charAt(0) != '/') {
+				context.options.prefix = '/' + context.options.prefix;
 			}
 
 			// Create our socket instance based on options
 
 			var socket;
-			if (options.socket) { // Was given to us
-				socket = options.socket;
+			if (context.options.socket) { // Was given to us
+				socket = context.options.socket;
 			}
-			else if (options.origin) { // A custom origin
-				socket = $window.io.sails.connect(options.origin);
+			else if (context.options.origin) { // A custom origin
+				socket = $window.io.sails.connect(context.options.origin);
 			}
 			else { // Default: use base socket
 				socket = $window.io.socket;
@@ -140,17 +156,17 @@
 			};
 
 			// Caching
-			var cache = {};
+			this.cache = {};
 			// TODO implement cache clearing?
 
-			function removeFromCache(id) {
-				delete cache[id];
+			this.removeFromCache = function (id) {
+				delete context.cache[id];
 				// remove this item in all known lists
-				forEach(cache, function (cacheItem) {
+				forEach(context.cache, function (cacheItem) {
 					if (isArray(cacheItem)) {
 						var foundIndex = null;
 						forEach(cacheItem, function (item, index) {
-							if (item[options.primaryKey] == id) {
+							if (item[context.options.primaryKey] == id) {
 								foundIndex = index;
 							}
 						});
@@ -166,13 +182,13 @@
 				copy(value || {}, this);
 			}
 
-			function mergeParams(params, actionParams) {
+			this.mergeParams = function (params, actionParams) {
 				return extend({}, actionParams || {}, params || {});
 			}
 
 			// Handle a request
 			// Does a small amount of preparation of data and directs to the appropriate request handler
-			function handleRequest(item, params, action, success, error) {
+			this.handleRequest = function(item, params, action, success, error) {
 
 				// When params is a function, it's actually a callback and no params were provided
 				if (isFunction(params)) {
@@ -186,32 +202,36 @@
 					actionParams = action && typeof action.params === 'object' ? action.params : {};
 				if (action.method == 'GET') {
 
-					instanceParams = mergeParams(params, actionParams);
+					instanceParams = context.mergeParams(params, actionParams);
 
 					// Do not cache if:
 					// 1) action is set to cache=false (the default is true) OR
 					// 2) action uses a custom url (Sails only sends updates to ids) OR
 					// 3) the resource is an individual item without an id (Sails only sends updates to ids)
 
-					if (!action.cache || (!action.isAssociation && action.url) || (!action.isArray && (!instanceParams || !instanceParams[options.primaryKey]))) { // uncached
+					if (!action.cache || (action.url && !action.isAssociation) || (!action.isArray && (!instanceParams || !instanceParams[context.options.primaryKey]))) { // uncached
+						console.log("Not cached");
 						item = action.isArray ? [] : new Resource();
 					}
 					else {
+						console.log("Cached");
 						// cache key is 1) stringified params for lists or 2) id for individual items
-						var key = action.isArray ? JSON.stringify(instanceParams || {}) : instanceParams[options.primaryKey];
+						var key = action.isArray ? JSON.stringify(instanceParams || {}) : instanceParams[context.options.primaryKey];
 						// pull out of cache if available, otherwise create new instance
-						item = cache[key] || (action.isArray ? []
+						item = context.cache[key] || (action.isArray ? []
 								// Set key on object using options.primaryKey
 								: (function () {
 								var tmp = {};
-								tmp[options.primaryKey] = key;
+								tmp[context.options.primaryKey] = key;
 								return new Resource(tmp)
 							})());
 
-						cache[key] = item; // store item in cache
+						this.cache[key] = item; // store item in cache
 					}
 
-					return retrieveResource(item, instanceParams, action, success, error);
+					console.log(this.cache);
+
+					return context.retrieveResource(item, instanceParams, action, success, error);
 				}
 				else {
 					// When we have no item, params is assumed to be the item data
@@ -220,19 +240,19 @@
 						params = {};
 					}
 
-					instanceParams = mergeParams(params, actionParams);
+					instanceParams = context.mergeParams(params, actionParams);
 
 					if (action.method == 'POST' || action.method == 'PUT') { // Update individual instance of model
-						return createOrUpdateResource(item, instanceParams, action, success, error);
+						return context.createOrUpdateResource(item, instanceParams, action, success, error);
 					}
 					else if (action.method == 'DELETE') { // Delete individual instance of model
-						return deleteResource(item, instanceParams, action, success, error);
+						return context.deleteResource(item, instanceParams, action, success, error);
 					}
 				}
 			}
 
 			// Handle a response
-			function handleResponse(item, data, action, deferred, delegate) {
+			this.handleResponse = function (item, data, action, deferred, delegate) {
 				action = action || {};
 				$rootScope.$apply(function () {
 					item.$resolved = true;
@@ -245,7 +265,7 @@
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
 						// item is not an array, only one item should be found or an error is thrown.
 						var errorMessage = (data.length ? 'Multiple' : 'No') +
-							' items found while performing GET on a singular \'' + model + '\' Resource; did you mean to do a query?';
+							' items found while performing GET on a singular \'' + context.model + '\' Resource; did you mean to do a query?';
 
 						$log.error(errorMessage);
 						deferred.reject(errorMessage, item, data);
@@ -278,7 +298,7 @@
 				});
 			}
 
-			function attachPromise(item, success, error) {
+			this.attachPromise = function(item, success, error) {
 				var deferred = $q.defer();
 				item.$promise = deferred.promise.then(function (result) {
 					// Like in ngResource explicit success handler
@@ -296,97 +316,47 @@
 				return deferred;
 			}
 
-			function resolveAssociations(responseItem) {
-				forEach(options.associations, function (association, attr) {
-					if (isDefined(responseItem[attr])) {
-						var associateParams = {};
-						if (isArray(responseItem[attr])) {
-							if (responseItem[attr].length > 0) {
-								if (isObject(responseItem[attr][0])) {
-									associateParams[options.primaryKey] = _.pluck(responseItem[attr], options.primaryKey);
-								}
-								else {
-									associateParams[options.primaryKey] = responseItem[attr];
-								}
-								responseItem[attr] = association.model.association({
-									model: model,
-									modelId: responseItem[options.primaryKey],
-									association: attr
-								});
+			this.resolveAssociations = function(responseItem) {
+				forEach(context.options.associations, function (association, attr) {
+					context.resolveAssociation(responseItem, attr, association);
+				});
+			}
 
-							}
+			this.resolveAssociation = function(responseItem, attr, association) {
+				if (isDefined(responseItem[attr])) {
+					var associateParams = {};
+					if (isArray(responseItem[attr])) {
+						var object = {
+							model: context.model,
+							modelId: responseItem[context.options.primaryKey],
+							association: attr
+						};
+
+						if(responseItem[attr].$resolved) {
+							responseItem[attr].$refresh();
 						}
 						else {
-							if (isObject(responseItem[attr])) {
-								associateParams[association.primaryKey] = responseItem[attr][association.primaryKey];
-							}
-							else if (isString(responseItem[attr])) {
-								associateParams[association.primaryKey] = responseItem[attr];
-							}
-							responseItem[attr] = association.model.get(associateParams);
+							responseItem[attr] = association.model.association(object);
+
 						}
 					}
-				});
-			}
-
-			// Request handler function for GETs
-			function retrieveResource(item, params, action, success, error) {
-				var deferred = attachPromise(item, success, error);
-
-				var url = buildUrl(model, params ? params[options.primaryKey] : null, action, params, options);
-				item.$retrieveUrl = url;
-
-				console.log("retrieveResource url");
-				console.log(url);
-
-				if (options.verbose) {
-					$log.info('sailsResource calling GET ' + url);
+					else {
+						if (isObject(responseItem[attr])) {
+							associateParams[association.primaryKey] = responseItem[attr][association.primaryKey];
+						}
+						else if (isString(responseItem[attr])) {
+							associateParams[association.primaryKey] = responseItem[attr];
+						}
+						responseItem[attr] = association.model.get(associateParams);
+					}
 				}
+			};
 
-
-				socket.get(url, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
-						if (isArray(item)) { // empty the list and update with returned data
-							while (item.length) item.pop();
-							forEach(data, function (responseItem) {
-								responseItem = new Resource(responseItem);
-								responseItem.$resolved = true;
-
-								resolveAssociations(responseItem);
-
-								item.push(responseItem); // update list
-							});
-						}
-						else {
-							extend(item, data); // update item
-
-							resolveAssociations(item);
-
-							// If item is not in the cache based on its id, add it now
-							if (!cache[item[options.primaryKey]]) {
-								cache[item[options.primaryKey]] = item;
-							}
-						}
-
-					});
-				});
-
-				return item;
-			}
-
-			function clearAssociations(data) {
-				forEach(options.associations, function (association, attr) {
+			this.clearAssociations = function (data) {
+				forEach(context.options.associations, function (association, attr) {
 					if (isDefined(data[attr])) {
 						if (isArray(data[attr])) {
-							var items = [];
-							forEach(data[attr], function (item) {
-								if (item.$resolved) {
-									items.push(item[association.primaryKey]);
-								}
-								else {
-									items.push(item);
-								}
-							});
+							delete data[attr];
 						}
 						else if (isObject(data[attr])) {
 							if (isDefined(data[attr][association.primaryKey])) {
@@ -399,9 +369,53 @@
 				return data;
 			}
 
+			// Request handler function for GETs
+			this.retrieveResource = function (item, params, action, success, error) {
+				var deferred = context.attachPromise(item, success, error);
+
+				var url = buildUrl(context.model, params ? params[context.options.primaryKey] : null, action, params, context.options);
+				item.$retrieveUrl = url;
+				item.$refresh = function () {
+					context.retrieveResource(item, params, action);
+				};
+
+				if (context.options.verbose) {
+					$log.info('sailsResource calling GET ' + url);
+				}
+
+				socket.get(url, function (response) {
+					context.handleResponse(item, response, action, deferred, function (data) {
+						if (isArray(item)) { // empty the list and update with returned data
+							while (item.length) item.pop();
+							forEach(data, function (responseItem) {
+								responseItem = new Resource(responseItem);
+								responseItem.$resolved = true;
+
+								context.resolveAssociations(responseItem);
+
+								item.push(responseItem); // update list
+							});
+						}
+						else {
+							extend(item, data); // update item
+
+							context.resolveAssociations(item);
+
+							// If item is not in the cache based on its id, add it now
+							if (!context.cache[item[context.options.primaryKey]]) {
+								context.cache[item[context.options.primaryKey]] = item;
+							}
+						}
+
+					});
+				});
+
+				return item;
+			};
+
 			// Request handler function for PUTs and POSTs
-			function createOrUpdateResource(item, params, action, success, error) {
-				var deferred = attachPromise(item, success, error);
+			this.createOrUpdateResource = function (item, params, action, success, error) {
+				var deferred = context.attachPromise(item, success, error);
 
 				// prep data
 				var transformedData;
@@ -413,42 +427,52 @@
 				// prevents prototype functions being sent
 				var data = copyAndClear(transformedData || item, {});
 
-				data = clearAssociations(data);
+				data = context.clearAssociations(data);
 
 
-				var url = buildUrl(model, data[options.primaryKey], action, params, options);
+				var url = buildUrl(context.model, data[context.options.primaryKey], action, params, context.options);
 
 				// when Resource has id use PUT, otherwise use POST
-				var method = item[options.primaryKey] ? 'put' : 'post';
+				var method = "";
+				if (item[context.options.primaryKey] && !action.isAssociation) {
+					method = "put";
+				}
+				else {
+					method = "post";
+				}
 
-				if (options.verbose) {
+				if (context.options.verbose) {
 					$log.info('sailsResource calling ' + method.toUpperCase() + ' ' + url);
 				}
 
 				socket[method](url, data, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
-						extend(item, data);
-
-						if (method == "post") {
-							resolveAssociations(item);
+					context.handleResponse(item, response, action, deferred, function (data) {
+						if (action.isAssociation) {
 						}
+						else {
+							extend(item, data);
 
-						var message = {
-							model: model,
-							data: item
-						};
-						message[options.primaryKey] = item[options.primaryKey];
+							if (method == "post") {
+								context.resolveAssociations(item);
+							}
 
-						if (method === 'put') {
-							// Update cache
-							socketUpdateResource(message);
-							// Emit event
-							$rootScope.$broadcast(MESSAGES.updated, message);
-						} else {
-							// Update cache
-							socketCreateResource(message);
-							// Emit event
-							$rootScope.$broadcast(MESSAGES.created, message);
+							var message = {
+								model: context.model,
+								data: item
+							};
+							message[context.options.primaryKey] = item[context.options.primaryKey];
+
+							if (method === 'put') {
+								// Update cache
+								context.socketUpdateResource(message);
+								// Emit event
+								$rootScope.$broadcast(MESSAGES.updated, message);
+							} else {
+								// Update cache
+								context.socketCreateResource(message);
+								// Emit event
+								$rootScope.$broadcast(MESSAGES.created, message);
+							}
 						}
 					});
 				});
@@ -457,34 +481,45 @@
 			}
 
 			// Request handler function for DELETEs
-			function deleteResource(item, params, action, success, error) {
-				var deferred = attachPromise(item, success, error);
-				var url = buildUrl(model, item[options.primaryKey], action, params, options);
+			this.deleteResource = function (item, params, action, success, error) {
+				var deferred = context.attachPromise(item, success, error);
+				var url = buildUrl(context.model, item[context.options.primaryKey], action, params, context.options);
 
-				if (options.verbose) {
+				if (context.options.verbose) {
 					$log.info('sailsResource calling DELETE ' + url);
 				}
+
 				socket.delete(url, function (response) {
-					handleResponse(item, response, action, deferred, function () {
-						removeFromCache(item[options.primaryKey]);
-						var tmp = {model: model};
-						tmp[options.primaryKey] = item[options.primaryKey];
-						$rootScope.$broadcast(MESSAGES.destroyed, tmp);
-						// leave local instance unmodified
+					context.handleResponse(item, response, action, deferred, function () {
+						if (!action.isAssociation) {
+							context.removeFromCache(item[context.options.primaryKey]);
+							var tmp = {model: context.model};
+							tmp[context.options.primaryKey] = item[context.options.primaryKey];
+							$rootScope.$broadcast(MESSAGES.destroyed, tmp);
+							// leave local instance unmodified
+						}
+						else {
+							forEach(item[params.association], function (associationItem, keyRemoved) {
+								if (associationItem[context.options.associations[params.association].primaryKey] == params.associatedId) {
+									item[params.association].splice(keyRemoved, 1);
+								}
+							});
+						}
 					});
 				});
 
 				return item.$promise;
 			}
 
-			function socketAddedToResource(model, message) {
-				var url = options.prefix + "/" + model + "/" + message[options.primaryKey] + "/" + message.attribute + "/" + message.addedId;
-				var association = options.associations[message.attribute];
-				if (!isDefined(association)) {
-					forEach(cache, function (cacheItem, key) {
-						if (isArray(cacheItem)) {
-							forEach(cacheItem, function (item) {
-								if (item[options.primaryKey] == message[options.primaryKey]) {
+			this.socketAddedToResource = function (model, message) {
+				var url = context.options.prefix + "/" + context.model + "/" + message[context.options.primaryKey] + "/" + message.attribute + "/" + message.addedId;
+				var association = context.options.associations[message.attribute];
+
+				forEach(context.cache, function (cacheItem, key) {
+					if (isArray(cacheItem)) {
+						forEach(cacheItem, function (item) {
+							if (item[context.options.primaryKey] == message[context.options.primaryKey]) {
+								if (!isDefined(association)) {
 									socket.get(url, function (response) {
 										$rootScope.$apply(function () {
 											if (isArray(item[message.attribute])) {
@@ -496,11 +531,17 @@
 										});
 									});
 								}
-							});
-						}
-						else if (key == message[options.primaryKey]) {
+								else {
+									context.resolveAssociation(item, message.attribute, association);
+								}
+							}
+						});
+					}
+					else if (key == message[context.options.primaryKey]) {
+						if (!isDefined(association)) {
 							socket.get(url, function (response) {
 								$rootScope.$apply(function () {
+
 									if (isArray(cacheItem[message.attribute])) {
 										cacheItem[message.attribute].push(response[0]);
 									}
@@ -510,45 +551,56 @@
 								});
 							});
 						}
-					});
-				}
+						else {
+							context.resolveAssociation(cacheItem, message.attribute, association);
+						}
+					}
+				});
 			}
 
-			function socketRemovedFromResource(message) {
-				var association = options.associations[message.attribute];
-				if (!isDefined(association)) {
-					forEach(cache, function (cacheItem, key) {
-						if (isArray(cacheItem)) {
-							forEach(cacheItem, function (item) {
-								if (item[options.primaryKey] == message[options.primaryKey]) {
+			this.socketRemovedFromResource = function (message) {
+				var association = context.options.associations[message.attribute];
+				forEach(context.cache, function (cacheItem, key) {
+					if (isArray(cacheItem)) {
+						forEach(cacheItem, function (item) {
+							if (item[context.options.primaryKey] == message[context.options.primaryKey]) {
+								if (!isDefined(association)) {
 									forEach(item[message.attribute], function (itemRemoved, keyRemoved) {
-										if (itemRemoved[options.primaryKey] == message.removedId) {
+										if (itemRemoved[context.options.primaryKey] == message.removedId) {
 											item[message.attribute].splice(keyRemoved, 1);
 										}
 									})
 								}
-							});
-						}
-						else if (key == message[options.primaryKey]) {
-							forEach(cacheItem[message.attribute], function (itemRemoved, keyRemoved) {
-								if (itemRemoved[options.primaryKey] == message.removedId) {
+								else {
+									context.resolveAssociation(item, message.attribute, association);
+								}
+							}
+						});
+					}
+					else if (key == message[context.options.primaryKey]) {
+						forEach(cacheItem[message.attribute], function (itemRemoved, keyRemoved) {
+							if (!isDefined(association)) {
+								if (itemRemoved[context.options.primaryKey] == message.removedId) {
 									cacheItem[message.attribute].splice(keyRemoved, 1);
 								}
-							})
-						}
-					});
-				}
+							}
+							else {
+								context.resolveAssociation(cacheItem, message.attribute, association);
+							}
+						})
+					}
+				});
 			}
 
-			function socketUpdateResource(message) {
-				forEach(cache, function (cacheItem, key) {
+			this.socketUpdateResource = function (message) {
+				forEach(context.cache, function (cacheItem, key) {
 					if (isArray(cacheItem)) {
 						forEach(cacheItem, function (item) {
-							if (item[options.primaryKey] == message[options.primaryKey]) {
+							if (item[context.options.primaryKey] == message[context.options.primaryKey]) {
 								if (needsPopulate(message.data, item)) { // go to server for updated data
 									var tmp = {};
-									tmp[options.primaryKey] = item[options.primaryKey];
-									retrieveResource(item, tmp);
+									tmp[context.options.primaryKey] = item[context.options.primaryKey];
+									context.retrieveResource(item, tmp);
 								}
 								else {
 									extend(item, message.data);
@@ -556,11 +608,11 @@
 							}
 						});
 					}
-					else if (key == message[options.primaryKey]) {
+					else if (key == message[context.options.primaryKey]) {
 						if (needsPopulate(message.data, cacheItem)) { // go to server for updated data
 							var tmp = {};
-							tmp[options.primaryKey] = cacheItem[options.primaryKey];
-							retrieveResource(cacheItem, tmp);
+							tmp[context.options.primaryKey] = cacheItem[context.options.primaryKey];
+							context.retrieveResource(cacheItem, tmp);
 						}
 						else {
 							extend(cacheItem, message.data);
@@ -570,36 +622,28 @@
 
 			}
 
-			function socketCreateResource(message) {
-				cache[message[options.primaryKey]] = new Resource(message.data);
+			this.socketCreateResource = function (message) {
+				context.cache[message[context.options.primaryKey]] = new Resource(message.data);
 				// when a new item is created we have no way of knowing if it belongs in a cached list,
 				// this necessitates doing a server fetch on all known lists
 				// TODO does this make sense?
-				console.log("socket create cache");
-				console.log(cache);
-				forEach(cache, function (cacheItem, key) {
+				forEach(context.cache, function (cacheItem, key) {
 					if (isArray(cacheItem)) {
 						var object = JSON.parse(key);
-						console.log("socket create object param");
 
-						if (object.model && object.modelId && object.association) {
-							retrieveResource(cacheItem, object, DEFAULT_ACTIONS.association);
+						if (!object.model && !object.modelId && !object.association) {
+							context.retrieveResource(cacheItem, object);
 						}
-						else {
-							retrieveResource(cacheItem, object);
-						}
-
-
 					}
 				});
 			}
 
-			function socketDeleteResource(message) {
-				removeFromCache(message[options.primaryKey]);
-			}
+			this.socketDeleteResource = function (message) {
+				context.removeFromCache(message[context.options.primaryKey]);
+			};
 
 			// Add each action to the Resource and/or its prototype
-			forEach(actions, function (action, name) {
+			forEach(context.actions, function (action, name) {
 				// fill in default action options
 				action = extend({}, {cache: true, isArray: false}, action);
 
@@ -609,11 +653,11 @@
 						// let angular-resource-sails refetch important data after
 						// a server disconnect then reconnect happens
 						socket.on('reconnect', function () {
-							handleRequest(isObject(self) ? self : null, params, action, success, error);
+							context.handleRequest(isObject(self) ? self : null, params, action, success, error);
 						});
 					}
 
-					return handleRequest(isObject(this) ? this : null, params, action, success, error);
+					return context.handleRequest(isObject(this) ? this : null, params, action, success, error);
 				}
 
 				if (/^(POST|PUT|PATCH|DELETE)$/i.test(action.method)) {
@@ -634,42 +678,46 @@
 			};
 
 			// Subscribe to changes
-			socket.on(model, function (message) {
-				if (options.verbose) {
-					$log.info('sailsResource received \'' + model + '\' message: ', message);
+			socket.on(context.model, function (message) {
+				if (context.options.verbose) {
+					$log.info('sailsResource received \'' + context.model + '\' message: ', message);
 				}
 				var messageName = null;
 				$rootScope.$apply(function () {
 					switch (message.verb) {
 						case 'updated':
-							socketUpdateResource(message);
+							context.socketUpdateResource(message);
 							messageName = MESSAGES.updated;
 							break;
 						case 'created':
-							socketCreateResource(message);
+							context.socketCreateResource(message);
 							messageName = MESSAGES.created;
 							break;
 						case 'destroyed':
-							socketDeleteResource(message);
+							context.socketDeleteResource(message);
 							messageName = MESSAGES.destroyed;
 							break;
 						case 'messaged':
 							messageName = MESSAGES.messaged;
 							break;
 						case 'addedTo' :
-							socketAddedToResource(model, message);
+							context.socketAddedToResource(context.model, message);
 							messageName = MESSAGES.addedTo;
 							break;
 						case 'removedFrom' :
-							socketRemovedFromResource(message);
+							context.socketRemovedFromResource(message);
 							messageName = MESSAGES.removedFrom;
 							break;
 					}
-					$rootScope.$broadcast(messageName, extend({model: model}, message));
+					$rootScope.$broadcast(messageName, extend({model: context.model}, message));
 				});
 			});
 
 			return Resource;
+		}
+
+		return function (model, actions, options) {
+			return new ResourceWrapper(model, actions, options);
 		};
 	}
 
@@ -721,7 +769,6 @@
 
 		if (action && action.url) {
 			var actionUrl = action.url;
-
 			// Look for :params in url and replace with params we have
 			var matches = action.url.match(/(:\w+)/g);
 			if (matches) {
@@ -735,7 +782,38 @@
 					}
 				});
 			}
+			url.push(options.prefix);
+			url.push("/");
+			url.push(actionUrl);
+		}
+		else if (action.path) {
+			var actionUrl = action.path;
+			var originalUrl = [];
+			originalUrl.push(options.prefix);
+			originalUrl.push('/');
+			originalUrl.push(model);
+			if (id) originalUrl.push('/' + id);
+			if (originalUrl.path) {
+				originalUrl.push('/');
+				originalUrl.push(action.path);
+			}
 
+			originalUrl = originalUrl.join('');
+
+			var matches = action.path.match(/(:\w+)/g);
+			if (matches) {
+				forEach(matches, function (match) {
+					var paramName = match.replace(':', '');
+					if (paramName === options.primaryKey) {
+						actionUrl = actionUrl.replace(match, id);
+					} else {
+						urlParams[paramName] = true;
+						actionUrl = actionUrl.replace(match, params[paramName]);
+					}
+				});
+			}
+			url.push(originalUrl);
+			url.push("/");
 			url.push(actionUrl);
 		}
 		else {
@@ -743,6 +821,7 @@
 			url.push('/');
 			url.push(model);
 			if (id) url.push('/' + id);
+
 		}
 
 		var queryParams = {};
