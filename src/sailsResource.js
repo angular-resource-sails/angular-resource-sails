@@ -29,13 +29,13 @@
 
 		this.configuration = {};
 
-		this.$get = ['$rootScope', '$window', '$log', '$q', '$timeout', function ($rootScope, $window, $log, $q, $timeout) {
+		this.$get = ['$rootScope', '$window', '$log', '$q', '$injector', function ($rootScope, $window, $log, $q, $injector) {
 			var config = extend({}, DEFAULT_CONFIGURATION, this.configuration);
-			return resourceFactory($rootScope, $window, $log, $q, $timeout, config);
+			return resourceFactory($rootScope, $window, $log, $q, $injector, config);
 		}];
 	});
 
-	function resourceFactory($rootScope, $window, $log, $q, $timeout, config) {
+	function resourceFactory($rootScope, $window, $log, $q, $injector, config) {
 
 		var DEFAULT_ACTIONS = {
 			'get': {method: 'GET'},
@@ -188,7 +188,7 @@
 
 			// Handle a request
 			// Does a small amount of preparation of data and directs to the appropriate request handler
-			this.handleRequest = function(item, params, action, success, error) {
+			this.handleRequest = function (item, params, action, success, error) {
 
 				// When params is a function, it's actually a callback and no params were provided
 				if (isFunction(params)) {
@@ -296,7 +296,7 @@
 				});
 			}
 
-			this.attachPromise = function(item, success, error) {
+			this.attachPromise = function (item, success, error) {
 				var deferred = $q.defer();
 				item.$promise = deferred.promise.then(function (result) {
 					// Like in ngResource explicit success handler
@@ -314,13 +314,20 @@
 				return deferred;
 			}
 
-			this.resolveAssociations = function(responseItem) {
+			this.resolveAssociations = function (responseItem, params, action) {
 				forEach(context.options.associations, function (association, attr) {
-					context.resolveAssociation(responseItem, attr, association);
+					if (action.isAssociation && action.isArray) {
+						if(params.model != attr) {
+							context.resolveAssociation(responseItem, attr, association);
+						}
+					}
+					else {
+						context.resolveAssociation(responseItem, attr, association);
+					}
 				});
-			}
+			};
 
-			this.resolveAssociation = function(responseItem, attr, association) {
+			this.resolveAssociation = function (responseItem, attr, association) {
 				if (isDefined(responseItem[attr])) {
 					var associateParams = {};
 					if (isArray(responseItem[attr])) {
@@ -330,11 +337,11 @@
 							association: attr
 						};
 
-						if(responseItem[attr].$resolved) {
+						if (responseItem[attr].$resolved) {
 							responseItem[attr].$refresh();
 						}
 						else {
-							responseItem[attr] = association.model.association(object);
+							responseItem[attr] = $injector.get(association.model).association(object);
 
 						}
 					}
@@ -345,7 +352,7 @@
 						else if (isString(responseItem[attr])) {
 							associateParams[association.primaryKey] = responseItem[attr];
 						}
-						responseItem[attr] = association.model.get(associateParams);
+						responseItem[attr] = $injector.get(association.model).get(associateParams);
 					}
 				}
 			};
@@ -389,7 +396,7 @@
 								responseItem = new Resource(responseItem);
 								responseItem.$resolved = true;
 
-								context.resolveAssociations(responseItem);
+								context.resolveAssociations(responseItem, params, action);
 
 								item.push(responseItem); // update list
 							});
@@ -397,7 +404,7 @@
 						else {
 							extend(item, data); // update item
 
-							context.resolveAssociations(item);
+							context.resolveAssociations(item, params, action);
 
 							// If item is not in the cache based on its id, add it now
 							if (!context.cache[item[context.options.primaryKey]]) {
@@ -451,7 +458,7 @@
 							extend(item, data);
 
 							if (method == "post") {
-								context.resolveAssociations(item);
+								context.resolveAssociations(item, params, action);
 							}
 
 							var message = {
