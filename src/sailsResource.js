@@ -316,12 +316,7 @@
 
 			this.resolveAssociations = function (responseItem, params, action) {
 				forEach(context.options.associations, function (association, attr) {
-					if (action.isAssociation && action.isArray) {
-						if(params.model != attr) {
-							context.resolveAssociation(responseItem, attr, association);
-						}
-					}
-					else {
+					if (!action.isAssociation) {
 						context.resolveAssociation(responseItem, attr, association);
 					}
 				});
@@ -341,7 +336,11 @@
 							responseItem[attr].$refresh();
 						}
 						else {
-							responseItem[attr] = $injector.get(association.model).association(object);
+							var newData = $injector.get(association.model).association(object);
+							newData.$promise.then(function () {
+								responseItem[attr] = newData;
+							});
+
 
 						}
 					}
@@ -352,7 +351,10 @@
 						else if (isString(responseItem[attr])) {
 							associateParams[association.primaryKey] = responseItem[attr];
 						}
-						responseItem[attr] = $injector.get(association.model).get(associateParams);
+						var newData = $injector.get(association.model).get(associateParams);
+						newData.$promise.then(function () {
+							responseItem[attr] = newData;
+						});
 					}
 				}
 			};
@@ -361,13 +363,14 @@
 				forEach(context.options.associations, function (association, attr) {
 					if (isDefined(data[attr])) {
 						if (isArray(data[attr])) {
-							delete data[attr];
+							data[attr] = undefined;
 						}
 						else if (isObject(data[attr])) {
 							if (isDefined(data[attr][association.primaryKey])) {
 								data[attr] = data[attr][association.primaryKey];
 							}
 						}
+						else P
 					}
 				});
 
@@ -433,6 +436,8 @@
 				var data = copyAndClear(transformedData || item, {});
 
 				data = context.clearAssociations(data);
+				console.log("Associations cleared:");
+				console.log(data);
 
 
 				var url = buildUrl(context.model, data[context.options.primaryKey], action, params, context.options);
