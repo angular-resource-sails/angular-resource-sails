@@ -336,10 +336,11 @@
 							responseItem[attr].$refresh();
 						}
 						else {
-							var newData = $injector.get(association.model).association(object);
-							newData.$promise.then(function () {
+							responseItem["$"+attr] = $injector.get(association.model).association(object);
+							responseItem["$"+attr].$promise.then(function () {
 								$timeout(function () {
-									responseItem[attr] = newData;
+									Object.defineProperty(responseItem, attr,
+										Object.getOwnPropertyDescriptor(responseItem, "$"+attr));
 								});
 							});
 
@@ -353,10 +354,11 @@
 						else if (isString(responseItem[attr])) {
 							associateParams[association.primaryKey] = responseItem[attr];
 						}
-						var newData = $injector.get(association.model).get(associateParams);
-						newData.$promise.then(function () {
+						responseItem["$"+attr] = $injector.get(association.model).get(associateParams);
+						responseItem["$"+attr].$promise.then(function () {
 							$timeout(function () {
-								responseItem[attr] = newData;
+								Object.defineProperty(responseItem, attr,
+									Object.getOwnPropertyDescriptor(responseItem, "$"+attr));
 							});
 						});
 					}
@@ -374,7 +376,6 @@
 								data[attr] = data[attr][association.primaryKey];
 							}
 						}
-						else P
 					}
 				});
 
