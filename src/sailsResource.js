@@ -316,7 +316,13 @@
 
 			this.resolveAssociations = function (responseItem, params, action) {
 				forEach(context.options.associations, function (association, attr) {
-					if (action && !action.isAssociation) {
+					if (action && !action.isAssociation && action.isArray) {
+						context.resolveAssociation(responseItem, attr, association);
+					}
+					else if(action && !action.isArray && !action.isAssociation) {
+						context.resolveAssociation(responseItem, attr, association);
+					}
+					else if(!action) {
 						context.resolveAssociation(responseItem, attr, association);
 					}
 				});
@@ -336,11 +342,11 @@
 							responseItem[attr].$refresh();
 						}
 						else {
-							responseItem["$"+attr] = $injector.get(association.model).association(object);
-							responseItem["$"+attr].$promise.then(function () {
+							var newData = $injector.get(association.model).association(object);
+							newData.$promise.then(function () {
 								$timeout(function () {
-									Object.defineProperty(responseItem, attr,
-										Object.getOwnPropertyDescriptor(responseItem, "$"+attr));
+									delete responseItem[attr];
+									responseItem[attr] = newData;
 								});
 							});
 
@@ -354,11 +360,11 @@
 						else if (isString(responseItem[attr])) {
 							associateParams[association.primaryKey] = responseItem[attr];
 						}
-						responseItem["$"+attr] = $injector.get(association.model).get(associateParams);
-						responseItem["$"+attr].$promise.then(function () {
+						var newData = $injector.get(association.model).get(associateParams);
+						newData.$promise.then(function () {
 							$timeout(function () {
-								Object.defineProperty(responseItem, attr,
-									Object.getOwnPropertyDescriptor(responseItem, "$"+attr));
+								delete responseItem[attr];
+								responseItem[attr] = newData;
 							});
 						});
 					}
@@ -376,6 +382,7 @@
 								data[attr] = data[attr][association.primaryKey];
 							}
 						}
+						else P
 					}
 				});
 
