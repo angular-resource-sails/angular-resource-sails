@@ -29,13 +29,13 @@
 
 		this.configuration = {};
 
-		this.$get = ['$rootScope', '$window', '$log', '$q', '$injector', function ($rootScope, $window, $log, $q, $injector) {
+		this.$get = ['$rootScope', '$window', '$log', '$q', '$injector', '$timeout', function ($rootScope, $window, $log, $q, $injector, $timeout) {
 			var config = extend({}, DEFAULT_CONFIGURATION, this.configuration);
-			return resourceFactory($rootScope, $window, $log, $q, $injector, config);
+			return resourceFactory($rootScope, $window, $log, $q, $injector, $timeout, config);
 		}];
 	});
 
-	function resourceFactory($rootScope, $window, $log, $q, $injector, config) {
+	function resourceFactory($rootScope, $window, $log, $q, $injector, $timeout, config) {
 
 		var DEFAULT_ACTIONS = {
 			'get': {method: 'GET'},
@@ -316,7 +316,7 @@
 
 			this.resolveAssociations = function (responseItem, params, action) {
 				forEach(context.options.associations, function (association, attr) {
-					if (!action.isAssociation) {
+					if (action && !action.isAssociation) {
 						context.resolveAssociation(responseItem, attr, association);
 					}
 				});
@@ -338,7 +338,9 @@
 						else {
 							var newData = $injector.get(association.model).association(object);
 							newData.$promise.then(function () {
-								responseItem[attr] = newData;
+								$timeout(function () {
+									responseItem[attr] = newData;
+								});
 							});
 
 
@@ -353,7 +355,9 @@
 						}
 						var newData = $injector.get(association.model).get(associateParams);
 						newData.$promise.then(function () {
-							responseItem[attr] = newData;
+							$timeout(function () {
+								responseItem[attr] = newData;
+							});
 						});
 					}
 				}
