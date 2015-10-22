@@ -382,12 +382,11 @@
 								data[attr] = data[attr][association.primaryKey];
 							}
 						}
-						else P
 					}
 				});
 
 				return data;
-			}
+			};
 
 			// Request handler function for GETs
 			this.retrieveResource = function (item, params, action, success, error) {
