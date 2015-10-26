@@ -447,15 +447,17 @@
 				var data = copyAndClear(transformedData || item, {});
 
 				data = context.clearAssociations(data);
-				console.log("Associations cleared:");
-				console.log(data);
 
-
-				var url = buildUrl(context.model, data[context.options.primaryKey], action, params, context.options);
+				if(data['id']) {
+					var url = buildUrl(context.model, data[context.options.primaryKey], action, params, context.options);
+				}
+				else {
+					var url = buildUrl(context.model, null, action, params, context.options);
+				}
 
 				// when Resource has id use PUT, otherwise use POST
 				var method = "";
-				if (item[context.options.primaryKey] && !action.isAssociation) {
+				if (item['id'] && !action.isAssociation) {
 					method = "put";
 				}
 				else {
