@@ -318,10 +318,10 @@
 					if (action && !action.isAssociation && action.isArray) {
 						context.resolveAssociation(responseItem, attr, association);
 					}
-					else if(action && !action.isArray && !action.isAssociation) {
+					else if (action && !action.isArray && !action.isAssociation) {
 						context.resolveAssociation(responseItem, attr, association);
 					}
-					else if(!action) {
+					else if (!action) {
 						context.resolveAssociation(responseItem, attr, association);
 					}
 				});
@@ -353,18 +353,20 @@
 					else {
 						if (isObject(responseItem[attr])) {
 							associateParams[association.primaryKey] = responseItem[attr][association.primaryKey];
+							var newData = $injector.get(association.model).association(associateParams, null, null, responseItem[attr]);
 						}
-						else if (isString(responseItem[attr])) {
+						else {
 							associateParams[association.primaryKey] = responseItem[attr];
+							var newData = $injector.get(association.model).get(associateParams);
 						}
 
-						var newData = $injector.get(association.model).association(associateParams, null, null, responseItem[attr]);
 						newData.$promise.then(function () {
 							$timeout(function () {
 								delete responseItem[attr];
 								responseItem[attr] = newData;
 							});
 						});
+
 					}
 				}
 			};
@@ -446,7 +448,7 @@
 
 				data = context.clearAssociations(data);
 
-				if(data['id']) {
+				if (data['id']) {
 					var url = buildUrl(context.model, data[context.options.primaryKey], action, params, context.options);
 				}
 				else {
@@ -499,7 +501,7 @@
 				});
 
 				return item.$promise;
-			}
+			};
 
 			// Request handler function for DELETEs
 			this.deleteResource = function (item, params, action, success, error) {
@@ -530,7 +532,7 @@
 				});
 
 				return item.$promise;
-			}
+			};
 
 			this.socketAddedToResource = function (model, message) {
 				var url = context.options.prefix + "/" + context.model + "/" + message[context.options.primaryKey] + "/" + message.attribute + "/" + message.addedId;
@@ -577,7 +579,7 @@
 						}
 					}
 				});
-			}
+			};
 
 			this.socketRemovedFromResource = function (message) {
 				var association = context.options.associations[message.attribute];
@@ -611,7 +613,7 @@
 						})
 					}
 				});
-			}
+			};
 
 			this.socketUpdateResource = function (message) {
 				forEach(context.cache, function (cacheItem, key) {
@@ -641,7 +643,7 @@
 					}
 				});
 
-			}
+			};
 
 			this.socketCreateResource = function (message) {
 				context.cache[message[context.options.primaryKey]] = new Resource(message.data);
@@ -657,7 +659,7 @@
 						}
 					}
 				});
-			}
+			};
 
 			this.socketDeleteResource = function (message) {
 				context.removeFromCache(message[context.options.primaryKey]);
@@ -690,21 +692,32 @@
 				Resource[name] = actionMethod;
 			});
 
-			this.handleAssociation = function(item, action, instanceParams, key, success, error) {
+			this.handleAssociation = function (defaultData, item, action, instanceParams, key, deferred, success, error) {
 				if (isArray(action.transformResponse)) {
 					forEach(action.transformResponse, function (transformResponse) {
 						if (isFunction(transformResponse)) {
-							item = transformResponse(item);
+							defaultData = transformResponse(item);
 						}
 					});
 				}
-				if (isFunction(action.transformResponse)) item = action.transformResponse(item);
+				if (isFunction(action.transformResponse)) defaultData = action.transformResponse(defaultData);
 
-				var deferred = context.attachPromise(item, success, error);
-
-				if(isArray(item)) {
+				if (isArray(item)) {
 					var url = buildUrl(context.model, instanceParams ? instanceParams[context.options.primaryKey] : null, action, instanceParams, context.options);
 					item.$retriveUrl = url;
+					item.$refresh = function () {
+						return context.retrieveResource(item, instanceParams, action, success, error);
+					};
+
+					_.forEach(defaultData, function (value) {
+						var resource = new Resource(value);
+						item.push(resource);
+					});
+				}
+				else {
+					_.forEach(defaultData, function (value, key) {
+						item[key] = value;
+					});
 				}
 
 				item.$resolved = true;
@@ -716,7 +729,7 @@
 				context.cache[key] = item;
 
 				return item;
-			}
+			};
 
 			Resource.association = function (params, success, error, defaultData) {
 				var action = extend({}, {cache: true, isArray: false}, context.actions.association);
@@ -724,33 +737,31 @@
 
 				var instanceParams = context.mergeParams(params, actionParams);
 
-				if(defaultData) {
-					if(isArray(defaultData)) {
+				if (defaultData) {
+					if (isArray(defaultData)) {
 						var key = JSON.stringify(instanceParams || {});
-						var items = _.map(defaultData, function (item) {
-							return new Resource(item);
-						});
+						var item = [];
+						var deferred = context.attachPromise(item, success, error);
+						context.handleAssociation(defaultData, item, action, instanceParams, key, deferred, success, error);
 
-						items.$refresh = function () {
-							return context.retrieveResource(items, instanceParams, action, success, error);
-						};
-
-						return context.handleAssociation(items, action, instanceParams, key, success, error);
+						return item;
 					}
-					else if(isObject(defaultData)) {
+					else if (isObject(defaultData)) {
 						var key = defaultData[context.options.primaryKey];
+						var item = new Resource();
+						var deferred = context.attachPromise(item, success, error);
+						context.handleAssociation(defaultData, item, action, instanceParams, key, deferred, success, error);
 
-						var item = new Resource(defaultData);
-						return context.handleAssociation(item, action, instanceParams, key, success, error);
+						return item;
 					}
-					else if(isString(defaultData)) {
+					else {
 						return context.handleRequest(isObject(this) ? this : null, params, action, success, error);
 					}
 				}
 				else {
 					return context.handleRequest(isObject(this) ? this : null, params, action, success, error);
 				}
-			}
+			};
 
 			// Handy function for converting a Resource into plain JSON data
 			Resource.prototype.toJSON = function () {
