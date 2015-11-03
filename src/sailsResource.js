@@ -1,13 +1,13 @@
 (function (angular) {
 
 	var forEach = angular.forEach,
-		copy = angular.copy,
-		extend = angular.extend,
-		isObject = angular.isObject,
-		isArray = angular.isArray,
-		isString = angular.isString,
-		isFunction = angular.isFunction,
-		isDefined = angular.isDefined;
+			copy = angular.copy,
+			extend = angular.extend,
+			isObject = angular.isObject,
+			isArray = angular.isArray,
+			isString = angular.isString,
+			isFunction = angular.isFunction,
+			isDefined = angular.isDefined;
 
 	angular.module('sailsResource', []).provider('sailsResource', function () {
 
@@ -199,7 +199,7 @@
 
 
 				var instanceParams,
-					actionParams = action && typeof action.params === 'object' ? action.params : {};
+						actionParams = action && typeof action.params === 'object' ? action.params : {};
 				if (action.method == 'GET') {
 
 					instanceParams = context.mergeParams(params, actionParams);
@@ -210,7 +210,6 @@
 					// 3) the resource is an individual item without an id (Sails only sends updates to ids)
 
 					if (!action.cache || (action.url && !action.isAssociation) || (!action.isArray && (!instanceParams || !instanceParams[context.options.primaryKey]))) { // uncached
-
 						item = action.isArray ? [] : new Resource();
 					}
 					else {
@@ -218,12 +217,12 @@
 						var key = action.isArray ? JSON.stringify(instanceParams || {}) : instanceParams[context.options.primaryKey];
 						// pull out of cache if available, otherwise create new instance
 						item = context.cache[key] || (action.isArray ? []
-								// Set key on object using options.primaryKey
-								: (function () {
-								var tmp = {};
-								tmp[context.options.primaryKey] = key;
-								return new Resource(tmp)
-							})());
+									// Set key on object using options.primaryKey
+										: (function () {
+									var tmp = {};
+									tmp[context.options.primaryKey] = key;
+									return new Resource(tmp)
+								})());
 
 						this.cache[key] = item; // store item in cache
 					}
@@ -263,7 +262,7 @@
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
 						// item is not an array, only one item should be found or an error is thrown.
 						var errorMessage = (data.length ? 'Multiple' : 'No') +
-							' items found while performing GET on a singular \'' + context.model + '\' Resource; did you mean to do a query?';
+								' items found while performing GET on a singular \'' + context.model + '\' Resource; did you mean to do a query?';
 
 						$log.error(errorMessage);
 						deferred.reject(errorMessage, item, data);
@@ -342,15 +341,13 @@
 							responseItem[attr].$refresh();
 						}
 						else {
-							var newData = $injector.get(association.model).association(object);
+							var newData = $injector.get(association.model).association(object, null, null, responseItem[attr]);
 							newData.$promise.then(function () {
 								$timeout(function () {
 									delete responseItem[attr];
 									responseItem[attr] = newData;
 								});
 							});
-
-
 						}
 					}
 					else {
@@ -360,7 +357,8 @@
 						else if (isString(responseItem[attr])) {
 							associateParams[association.primaryKey] = responseItem[attr];
 						}
-						var newData = $injector.get(association.model).get(associateParams);
+
+						var newData = $injector.get(association.model).association(associateParams, null, null, responseItem[attr]);
 						newData.$promise.then(function () {
 							$timeout(function () {
 								delete responseItem[attr];
@@ -692,6 +690,68 @@
 				Resource[name] = actionMethod;
 			});
 
+			this.handleAssociation = function(item, action, instanceParams, key, success, error) {
+				if (isArray(action.transformResponse)) {
+					forEach(action.transformResponse, function (transformResponse) {
+						if (isFunction(transformResponse)) {
+							item = transformResponse(item);
+						}
+					});
+				}
+				if (isFunction(action.transformResponse)) item = action.transformResponse(item);
+
+				var deferred = context.attachPromise(item, success, error);
+
+				if(isArray(item)) {
+					var url = buildUrl(context.model, instanceParams ? instanceParams[context.options.primaryKey] : null, action, instanceParams, context.options);
+					item.$retriveUrl = url;
+				}
+
+				item.$resolved = true;
+
+				deferred.resolve({
+					item: item
+				});
+
+				context.cache[key] = item;
+
+				return item;
+			}
+
+			Resource.association = function (params, success, error, defaultData) {
+				var action = extend({}, {cache: true, isArray: false}, context.actions.association);
+				var actionParams = action && typeof action.params === 'object' ? action.params : {};
+
+				var instanceParams = context.mergeParams(params, actionParams);
+
+				if(defaultData) {
+					if(isArray(defaultData)) {
+						var key = JSON.stringify(instanceParams || {});
+						var items = _.map(defaultData, function (item) {
+							return new Resource(item);
+						});
+
+						items.$refresh = function () {
+							return context.retrieveResource(items, instanceParams, action, success, error);
+						};
+
+						return context.handleAssociation(items, action, instanceParams, key, success, error);
+					}
+					else if(isObject(defaultData)) {
+						var key = defaultData[context.options.primaryKey];
+
+						var item = new Resource(defaultData);
+						return context.handleAssociation(item, action, instanceParams, key, success, error);
+					}
+					else if(isString(defaultData)) {
+						return context.handleRequest(isObject(this) ? this : null, params, action, success, error);
+					}
+				}
+				else {
+					return context.handleRequest(isObject(this) ? this : null, params, action, success, error);
+				}
+			}
+
 			// Handy function for converting a Resource into plain JSON data
 			Resource.prototype.toJSON = function () {
 				var data = extend({}, this);
@@ -881,7 +941,7 @@
 			}
 			value.forEach(function (v) {
 				if (angular.isObject(v)) {
-					v = angular.isDate(v) ? v.toISOString() : angular.toJson(v);
+					v = angular.isDFix - ate(v) ? v.toISOString() : angular.toJson(v);
 				}
 				parts.push(key + '=' + v);
 			});
