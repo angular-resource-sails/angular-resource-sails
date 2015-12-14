@@ -17,11 +17,12 @@ binding necessary for realtime updates to affect the client.
 
 Install
 =====================
-Add 'angular-resource-sails' to your bower.json file and the following to your page head:
+Install 'angular-resource-sails' via either npm or bower and then and the following to your page head:
 ```html
-<script src="/bower_components/sails.io.js/dist/sails.io.js"></script>
-<script src="/bower_components/angular-resource-sails/src/sailsResource.js"></script>
+<script src="/assets/js/dependencies/sails.io.js"></script>
+<script src="/node_modules/angular-resource-sails/src/sailsResource.js"></script>
 ```
+(note the sails.io.js is a dependency you'll need to include, it's in the assets/js/dependencies folder by default)
 
 Then, in your Angular application dependencies include 'sailsResource' as one of them.
 
