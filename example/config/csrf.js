@@ -38,7 +38,7 @@
  * http://en.wikipedia.org/wiki/Cross-site_request_forgery
  *
  * For more information on this configuration file, including info on CSRF + CORS, see:
- * http://beta.sailsjs.org/#/documentation/reference/sails.config/sails.config.csrf.html
+ * http://sailsjs.org/#!/documentation/reference/sails.config/sails.config.csrf.html
  *
  */
 

@@ -15,15 +15,10 @@
 module.exports = function(grunt) {
 
 	grunt.config.set('watch', {
-		api: {
-
-			// API files to watch:
-			files: ['api/**/*']
-		},
 		assets: {
 
 			// Assets to watch:
-			files: ['assets/**/*', '../src/sailsResource.js', 'tasks/pipeline.js'],
+			files: ['assets/**/*', 'tasks/pipeline.js', '!**/node_modules/**'],
 
 			// When assets are changed:
 			tasks: ['syncAssets' , 'linkAssets']

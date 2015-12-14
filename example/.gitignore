@@ -6,7 +6,7 @@
 #
 # Files which match the splat patterns below will
 # be ignored by git.  This keeps random crap and
-# and sensitive credentials from being uploaded to 
+# sensitive credentials from being uploaded to 
 # your repository.  It allows you to configure your
 # app for your machine without accidentally
 # committing settings which will smash the local 

@@ -9,9 +9,7 @@
     "url": "https://github.com/xjpro/angular-resource-sails.git"
   },
   "scripts": {
-    "install": "node_modules/.bin/bower install",
-    "test": "cd example && npm install && cd .. && npm run unit-tests && npm run integration-tests",
-    "unit-tests": "node node_modules/karma/bin/karma start --browsers PhantomJS --single-run",
+    "test": "cd example && npm install && cd .. & npm run integration-tests",
     "integration-tests": "node node_modules/gulp/bin/gulp.js protractor"
   },
   "keywords": [
@@ -25,11 +23,11 @@
     "Jason More <jason.more@gmail.com> (http://jasonmore.net)"
   ],
   "dependencies": {
-    "sails": "~0.11.0-rc9"
+    "sails": "0.11.3"
   },
   "devDependencies": {
-    "bower": "^1.3.9",
-    "exec": "^0.1.2",
+    "angular": "1.3.x",
+    "angular-mocks": "1.3.x",
     "gulp": "^3.8.7",
     "gulp-protractor": "0.0.11",
     "karma": "^0.12.22",
