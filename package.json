@@ -9,7 +9,6 @@
     "url": "https://github.com/xjpro/angular-resource-sails.git"
   },
   "scripts": {
-    "install": "node_modules/.bin/bower install",
     "test": "cd example && npm install && cd .. && npm run unit-tests && npm run integration-tests",
     "unit-tests": "node node_modules/karma/bin/karma start --browsers PhantomJS --single-run",
     "integration-tests": "node node_modules/gulp/bin/gulp.js protractor"
