@@ -217,37 +217,38 @@
 			}
 
 			// Handle a response
-			function handleResponse(item, data, action, deferred, delegate) {
+			function handleResponse(item, response, action, deferred, delegate) {
+				var body = response.body;
 				action = action || {};
 				$rootScope.$apply(function () {
 					item.$resolved = true;
 
-					if (data && (data.error || data.statusCode > 400)) {
-						$log.error(data);
-						deferred.reject(data.error || data, item, data);
+					if (response && response.statusCode > 400) {
+						$log.error(response);
+						deferred.reject(response, item, body);
 					}
-					else if (!isArray(item) && isArray(data) && data.length != 1) {
+					else if (!isArray(item) && isArray(body) && body.length != 1) {
 						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
 						// item is not an array, only one item should be found or an error is thrown.
-						var errorMessage = (data.length ? 'Multiple' : 'No') +
+						var errorMessage = (body.length ? 'Multiple' : 'No') +
 							' items found while performing GET on a singular \'' + model + '\' Resource; did you mean to do a query?';
 
 						$log.error(errorMessage);
-						deferred.reject(errorMessage, item, data);
+						deferred.reject(errorMessage, item, body);
 					}
 					else {
 						// converting single array to single item
-						if (!isArray(item) && isArray(data)) data = data[0];
+						if (!isArray(item) && isArray(body)) body = body[0];
 
 						if (isArray(action.transformResponse)) {
 							forEach(action.transformResponse, function(transformResponse) {
 								if (isFunction(transformResponse)) {
-									data = transformResponse(data);
+									body = transformResponse(body);
 								}
 							})
 						}
-						if (isFunction(action.transformResponse)) data = action.transformResponse(data);
-						if (isFunction(delegate)) delegate(data);
+						if (isFunction(action.transformResponse)) body = action.transformResponse(body);
+						if (isFunction(delegate)) delegate(body);
 						
 						// 1) Internally resolve with both item and header getter
 						// for pass'em to explicit success handler
@@ -290,7 +291,7 @@
 					$log.info('sailsResource calling GET ' + url);
 				}
 
-				socket.get(url, function (response) {
+				socket.get(url, function (resData, response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						if (isArray(item)) { // empty the list and update with returned data
 							while (item.length) item.pop();
@@ -371,7 +372,7 @@
 				if (options.verbose) {
 					$log.info('sailsResource calling DELETE ' + url);
 				}
-				socket.delete(url, function (response) {
+				socket.delete(url, function (resData, response) {
 					handleResponse(item, response, action, deferred, function () {
 						removeFromCache(item[options.primaryKey]);
 						var tmp = {model: model};

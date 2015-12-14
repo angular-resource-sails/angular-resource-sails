@@ -22,7 +22,7 @@ Install 'angular-resource-sails' via either npm or bower and then and the follow
 <script src="/assets/js/dependencies/sails.io.js"></script>
 <script src="/node_modules/angular-resource-sails/src/sailsResource.js"></script>
 ```
-(note the sails.io.js is a dependency you'll need to include, it's in the assets/js/dependencies folder by default)
+(note that sails.io.js is a dependency you'll need to include before sailsResource, it's in the assets/js/dependencies folder by default)
 
 Then, in your Angular application dependencies include 'sailsResource' as one of them.
 

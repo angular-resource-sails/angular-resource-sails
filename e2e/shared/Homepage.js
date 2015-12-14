@@ -28,6 +28,9 @@ var Homepage = function () {
 		},
 		found: function() {
 			return element(by.id('foundSimple'));
+		},
+		causeError: function() {
+			return element(by.css('.btn[ng-click="home.causeError()"]'))
 		}
 	};
 
@@ -77,6 +80,7 @@ var Homepage = function () {
 	this.created = element(by.binding('created'));
 	this.updated = element(by.binding('updated'));
 	this.destroyed = element(by.binding('destroyed'));
+	this.error = element(by.binding('error'));
 };
 
 module.exports = exports = Homepage;

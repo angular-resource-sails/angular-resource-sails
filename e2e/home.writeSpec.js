@@ -65,4 +65,9 @@ describe('homepage write >', function () {
 		expect(home.updated.getText()).toEqual('1');
 		expect(home.destroyed.getText()).toEqual('1');
 	});
+
+	it('receives broadcast messages', function() {
+		home.simpleForm.causeError().click();
+		expect(home.error.getText()).toEqual('404');
+	});
 });
