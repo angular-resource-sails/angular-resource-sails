@@ -25,13 +25,13 @@
 
 		this.configuration = {};
 
-		this.$get = ['$rootScope', '$window', '$log', '$q', function ($rootScope, $window, $log, $q) {
+		this.$get = ['$rootScope', '$window', '$log', '$q', '$timeout', function ($rootScope, $window, $log, $q, $timeout) {
 			var config = extend({}, DEFAULT_CONFIGURATION, this.configuration);
-			return resourceFactory($rootScope, $window, $log, $q, config);
+			return resourceFactory($rootScope, $window, $log, $q, $timeout, config);
 		}];
 	});
 
-	function resourceFactory($rootScope, $window, $log, $q, config) {
+	function resourceFactory($rootScope, $window, $log, $q, $timeout, config) {
 
 		var DEFAULT_ACTIONS = {
 			'get': {method: 'GET'},
@@ -49,7 +49,6 @@
 			messaged: '$sailsResourceMessaged',
 			addedTo : '$sailsResourceAddedTo',
 			removedFrom : '$sailsResourceRemovedFrom',
-
 
 			// Socket
 			connected: '$sailsConnected',
@@ -90,25 +89,25 @@
 			// Setup socket default messages
 
 			socket.on('connect', function () {
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					$rootScope.$broadcast(MESSAGES.connected);
 				});
 			});
 
 			socket.on('disconnect', function () {
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					$rootScope.$broadcast(MESSAGES.disconnected);
 				});
 			});
 
 			socket.on('reconnect', function () {
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					$rootScope.$broadcast(MESSAGES.reconnected);
 				});
 			});
 
 			socket.on('reconnecting', function (timeDisconnected, reconnectCount) {
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					$rootScope.$broadcast(MESSAGES.reconnecting, {
 						timeDisconnected: timeDisconnected,
 						reconnectCount: reconnectCount
@@ -117,7 +116,7 @@
 			});
 
 			socket.on('error', function (error) {
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					$rootScope.$broadcast(MESSAGES.socketError, error);
 				});
 			});
@@ -219,44 +218,46 @@
 			// Handle a response
 			function handleResponse(item, data, action, deferred, delegate) {
 				action = action || {};
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					item.$resolved = true;
 
 					if (data && (data.error || data.statusCode > 400)) {
 						$log.error(data);
 						deferred.reject(data.error || data, item, data);
-					}
-					else if (!isArray(item) && isArray(data) && data.length != 1) {
-						// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
-						// item is not an array, only one item should be found or an error is thrown.
-						var errorMessage = (data.length ? 'Multiple' : 'No') +
-							' items found while performing GET on a singular \'' + model + '\' Resource; did you mean to do a query?';
+					} else {
+						data = data.body;
+						if (!isArray(item) && isArray(data) && data.length != 1) {
+							// This scenario occurs when GET is done without an id and Sails returns an array. Since the cached
+							// item is not an array, only one item should be found or an error is thrown.
+							var errorMessage = (data.length ? 'Multiple' : 'No') +
+								' items found while performing GET on a singular \'' + model + '\' Resource; did you mean to do a query?';
 
-						$log.error(errorMessage);
-						deferred.reject(errorMessage, item, data);
-					}
-					else {
-						// converting single array to single item
-						if (!isArray(item) && isArray(data)) data = data[0];
-
-						if (isArray(action.transformResponse)) {
-							forEach(action.transformResponse, function(transformResponse) {
-								if (isFunction(transformResponse)) {
-									data = transformResponse(data);
-								}
-							})
+							$log.error(errorMessage);
+							deferred.reject(errorMessage, item, data);
 						}
-						if (isFunction(action.transformResponse)) data = action.transformResponse(data);
-						if (isFunction(delegate)) delegate(data);
-						
-						// 1) Internally resolve with both item and header getter
-						// for pass'em to explicit success handler
-						// 2) In attachPromise() cut off header getter, so that
-						// implicit success handlers receive only item
-						deferred.resolve({
-							item: item,
-							getHeaderFn: function(name) { return jwr && jwr.headers && jwr.headers[name]; }
-						});
+						else {
+							// converting single array to single item
+							if (!isArray(item) && isArray(data)) data = data[0];
+
+							if (isArray(action.transformResponse)) {
+								forEach(action.transformResponse, function(transformResponse) {
+									if (isFunction(transformResponse)) {
+										data = transformResponse(data);
+									}
+								})
+							}
+							if (isFunction(action.transformResponse)) data = action.transformResponse(data);
+							if (isFunction(delegate)) delegate(data);
+							
+							// 1) Internally resolve with both item and header getter
+							// for pass'em to explicit success handler
+							// 2) In attachPromise() cut off header getter, so that
+							// implicit success handlers receive only item
+							deferred.resolve({
+								item: item,
+								getHeaderFn: function(name) { return jwr && jwr.headers && jwr.headers[name]; }
+							});
+						}
 					}
 				});
 			}
@@ -290,8 +291,8 @@
 					$log.info('sailsResource calling GET ' + url);
 				}
 
-				socket.get(url, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
+				socket.get(url, function (response, jwr) {
+					handleResponse(item, jwr, action, deferred, function (data) {
 						if (isArray(item)) { // empty the list and update with returned data
 							while (item.length) item.pop();
 							forEach(data, function (responseItem) {
@@ -336,8 +337,8 @@
 					$log.info('sailsResource calling ' + method.toUpperCase() + ' ' + url);
 				}
 
-				socket[method](url, data, function (response) {
-					handleResponse(item, response, action, deferred, function (data) {
+				socket[method](url, data, function (response, jwr) {
+					handleResponse(item, jwr, action, deferred, function (data) {
 						extend(item, data);
 
 						var message = {
@@ -350,12 +351,16 @@
 							// Update cache
 							socketUpdateResource(message);
 							// Emit event
-							$rootScope.$broadcast(MESSAGES.updated, message);
+							$timeout(function() {
+								$rootScope.$broadcast(MESSAGES.updated, message);
+							});
 						} else {
 							// Update cache
 							socketCreateResource(message);
 							// Emit event
-							$rootScope.$broadcast(MESSAGES.created, message);
+							$timeout(function() {
+								$rootScope.$broadcast(MESSAGES.created, message);
+							});
 						}
 					});
 				});
@@ -371,12 +376,14 @@
 				if (options.verbose) {
 					$log.info('sailsResource calling DELETE ' + url);
 				}
-				socket.delete(url, function (response) {
-					handleResponse(item, response, action, deferred, function () {
+				socket.delete(url, function (response, jwr) {
+					handleResponse(item, jwr, action, deferred, function () {
 						removeFromCache(item[options.primaryKey]);
 						var tmp = {model: model};
 						tmp[options.primaryKey] = item[options.primaryKey];
-						$rootScope.$broadcast(MESSAGES.destroyed, tmp);
+						$timeout(function() {
+							$rootScope.$broadcast(MESSAGES.destroyed, tmp);
+						});
 						// leave local instance unmodified
 					});
 				});
@@ -470,7 +477,7 @@
 					$log.info('sailsResource received \'' + model + '\' message: ', message);
 				}
 				var messageName = null;
-				$rootScope.$apply(function () {
+				$timeout(function() {
 					switch (message.verb) {
 						case 'updated':
 							socketUpdateResource(message);
