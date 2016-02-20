@@ -47,8 +47,8 @@
       updated: '$sailsResourceUpdated',
       destroyed: '$sailsResourceDestroyed',
       messaged: '$sailsResourceMessaged',
-      addedTo : '$sailsResourceAddedTo',
-      removedFrom : '$sailsResourceRemovedFrom',
+      addedTo: '$sailsResourceAddedTo',
+      removedFrom: '$sailsResourceRemovedFrom',
 
 
       // Socket
@@ -77,10 +77,10 @@
       // Create our socket instance based on options
 
       var socket;
-      if(options.socket) { // Was given to us
+      if (options.socket) { // Was given to us
         socket = options.socket;
       }
-      else if(options.origin) { // A custom origin
+      else if (options.origin) { // A custom origin
         socket = $window.io.sails.connect(options.origin);
       }
       else { // Default: use base socket
@@ -96,30 +96,22 @@
       });
 
       socket.on('disconnect', function () {
-        $rootScope.$apply(function () {
-          $rootScope.$broadcast(MESSAGES.disconnected);
-        });
+        $rootScope.$broadcast(MESSAGES.disconnected);
       });
 
       socket.on('reconnect', function () {
-        $rootScope.$apply(function () {
-          $rootScope.$broadcast(MESSAGES.reconnected);
-        });
+        $rootScope.$broadcast(MESSAGES.reconnected);
       });
 
       socket.on('reconnecting', function (timeDisconnected, reconnectCount) {
-        $rootScope.$apply(function () {
-          $rootScope.$broadcast(MESSAGES.reconnecting, {
-            timeDisconnected: timeDisconnected,
-            reconnectCount: reconnectCount
-          });
+        $rootScope.$broadcast(MESSAGES.reconnecting, {
+          timeDisconnected: timeDisconnected,
+          reconnectCount: reconnectCount
         });
       });
 
       socket.on('error', function (error) {
-        $rootScope.$apply(function () {
-          $rootScope.$broadcast(MESSAGES.socketError, error);
-        });
+        $rootScope.$broadcast(MESSAGES.socketError, error);
       });
 
       // Disconnect socket when window unloads
@@ -192,7 +184,11 @@
             // pull out of cache if available, otherwise create new instance
             item = cache[key] || (action.isArray ? []
                 // Set key on object using options.primaryKey
-                : (function(){ var tmp = {}; tmp[options.primaryKey] = key; return new Resource(tmp) })());
+                : (function () {
+                var tmp = {};
+                tmp[options.primaryKey] = key;
+                return new Resource(tmp)
+              })());
             cache[key] = item; // store item in cache
           }
 
@@ -241,7 +237,7 @@
             if (!isArray(item) && isArray(body)) body = body[0];
 
             if (isArray(action.transformResponse)) {
-              forEach(action.transformResponse, function(transformResponse) {
+              forEach(action.transformResponse, function (transformResponse) {
                 if (isFunction(transformResponse)) {
                   body = transformResponse(body);
                 }
@@ -256,7 +252,9 @@
             // implicit success handlers receive only item
             deferred.resolve({
               item: item,
-              getHeaderFn: function(name) { return jwr && jwr.headers && jwr.headers[name]; }
+              getHeaderFn: function (name) {
+                return jwr && jwr.headers && jwr.headers[name];
+              }
             });
           }
         });
@@ -264,7 +262,7 @@
 
       function attachPromise(item, success, error) {
         var deferred = $q.defer();
-        item.$promise = deferred.promise.then(function(result) {
+        item.$promise = deferred.promise.then(function (result) {
           // Like in ngResource explicit success handler
           // (passed directly as an argument of action call)
           // receives two arguments:
@@ -305,8 +303,8 @@
               extend(item, data); // update item
 
               // If item is not in the cache based on its id, add it now
-              if (!cache[ item[ options.primaryKey ] ]) {
-                cache[ item[ options.primaryKey ] ] = item;
+              if (!cache[item[options.primaryKey]]) {
+                cache[item[options.primaryKey]] = item;
               }
             }
           });
@@ -458,7 +456,7 @@
       });
 
       // Handy function for converting a Resource into plain JSON data
-      Resource.prototype.toJSON = function() {
+      Resource.prototype.toJSON = function () {
         var data = extend({}, this);
         delete data.$promise;
         delete data.$resolved;
@@ -488,10 +486,10 @@
             case 'messaged':
               messageName = MESSAGES.messaged;
               break;
-            case 'addedTo' :
+            case 'addedTo':
               messageName = MESSAGES.addedTo;
               break;
-            case 'removedFrom' :
+            case 'removedFrom':
               messageName = MESSAGES.removedFrom;
               break;
           }
@@ -572,7 +570,7 @@
     }
 
     var queryParams = {};
-    angular.forEach(params, function(value, key) {
+    angular.forEach(params, function (value, key) {
       if (!urlParams[key]) {
         queryParams[key] = value;
       }
@@ -587,15 +585,23 @@
    * @see https://github.com/angular/angular.js/commit/6c8464ad14dd308349f632245c1a064c9aae242a#diff-748e0a1e1a7db3458d5f95d59d7e16c9L1142
    */
   function createQueryString(params) {
-    if (!params) { return ''; }
+    if (!params) {
+      return '';
+    }
 
     var parts = [];
-    Object.keys(params).sort().forEach(function(key) {
+    Object.keys(params).sort().forEach(function (key) {
       var value = params[key];
-      if (key === 'id') { return; }
-      if (value === null || value === undefined) { return; }
-      if (!Array.isArray(value)) { value = [value]; }
-      value.forEach(function(v) {
+      if (key === 'id') {
+        return;
+      }
+      if (value === null || value === undefined) {
+        return;
+      }
+      if (!Array.isArray(value)) {
+        value = [value];
+      }
+      value.forEach(function (v) {
         if (angular.isObject(v)) {
           v = angular.isDate(v) ? v.toISOString() : angular.toJson(v);
         }

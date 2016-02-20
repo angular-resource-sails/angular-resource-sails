@@ -4,7 +4,6 @@ var protractor = require("gulp-protractor").protractor;
 var webdriver_update = require("gulp-protractor").webdriver_update;
 var fs = require('fs');
 var path = require('path');
-//var process = require('process');
 
 var sailsProcess;
 
