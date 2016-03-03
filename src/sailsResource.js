@@ -331,7 +331,7 @@
 					$log.info('sailsResource calling ' + method.toUpperCase() + ' ' + url);
 				}
 
-				socket[method](url, data, function (response) {
+				socket[method](url, data, function (resData, response) {
 					handleResponse(item, response, action, deferred, function (data) {
 						extend(item, data);
 
