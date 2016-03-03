@@ -1,6 +1,6 @@
 {
   "name": "angular-resource-sails",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "private": false,
   "description": "Angular $resource style service for accessing sails socket.io resources",
   "main": "src/sailsResource.js",
